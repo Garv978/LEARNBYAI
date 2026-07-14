@@ -19,7 +19,7 @@ const Login = () => {
 
     try {
       await login({ email, password });
-      navigate("/dashboard");
+      navigate("/user/dashboard");
     } catch (err) {
       setError(err.response?.data?.message || "Something went wrong");
     } finally {
