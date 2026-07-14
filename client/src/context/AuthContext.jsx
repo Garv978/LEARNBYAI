@@ -2,13 +2,15 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import {
+  forgotPassword as forgotPasswordAPI,
   login as loginAPI,
   refresh as refreshAPI,
   register as registerAPI,
+  resetPassword as resetPasswordAPI,
   verifyEmail as verifyEmailAPI,
 } from "../services/AuthServices";
 
-import {jwtDecode} from "jwt-decode";
+import { jwtDecode } from "jwt-decode";
 
 const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
@@ -51,7 +53,8 @@ export const AuthProvider = ({ children }) => {
       await registerAPI(userData);
       return {
         success: true,
-        message: "Registration successful. Please check your email to verify your account.",
+        message:
+          "Registration successful. Please check your email to verify your account.",
       };
     } catch (err) {
       return {
@@ -61,11 +64,24 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
+const logout = async () => {
+  try {
+    // Call backend logout to clear cookies + invalidate refresh token
+    await API.post("/auth/logout");
+
+    // Clear frontend state
     localStorage.removeItem("accessToken");
     setUser(null);
     setIsAuthenticated(false);
-  };
+  } catch (err) {
+    console.error("Logout failed:", err);
+    // Still clear local state to force logout
+    localStorage.removeItem("accessToken");
+    setUser(null);
+    setIsAuthenticated(false);
+  }
+};
+
 
   const verifyEmail = async (userData) => {
     try {
@@ -93,6 +109,34 @@ export const AuthProvider = ({ children }) => {
       };
     }
   };
+  const forgotPassword = async (userData) => {
+    try {
+      const res = await forgotPasswordAPI(userData);
+      return {
+        success: true,
+        message: res.data.message || "Check your email for reset link",
+      };
+    } catch (err) {
+      return {
+        success: false,
+        message: err.response?.data?.message || "Failed to send reset email",
+      };
+    }
+  };
+  const resetPassword = async (userData) => {
+    try {
+      const res = await resetPasswordAPI(userData);
+      return {
+        success: true,
+        message: res.data.message || "Password reset successful",
+      };
+    } catch (err) {
+      return {
+        success: false,
+        message: err.response?.data?.message || "Password reset failed",
+      };
+    }
+  };
 
   return (
     <AuthContext.Provider
@@ -105,6 +149,8 @@ export const AuthProvider = ({ children }) => {
         logout,
         verifyEmail,
         refresh,
+        forgotPassword,
+        resetPassword,
       }}
     >
       {children}
