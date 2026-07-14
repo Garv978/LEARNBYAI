@@ -5,6 +5,7 @@ const {
   attachCookiesToResponse,
   createTokenUser,
   isTokenValid,
+  createJWT,
 } = require("../utils");
 const crypto = require("crypto");
 const { sendEmail } = require("../utils");
@@ -127,7 +128,7 @@ const login = async (req, res) => {
       }
       refreshToken = existingToken.refreshToken;
       attachCookiesToResponse({ res, user: tokenUser, refreshToken });
-      return res.status(StatusCodes.OK).json({ success: true, user: tokenUser });
+      return res.status(StatusCodes.OK).json({ success: true, user: tokenUser,accessToken : createJWT({ payload: { user: tokenUser }, expiresIn: "15m" }) });
     }
 
     refreshToken = crypto.randomBytes(40).toString("hex");
@@ -230,7 +231,6 @@ const resetPassword = async (req, res) => {
       .json({ success: false, message: err.message || "Server error" });
   }
 };
-
 const refresh = async (req, res) => {
   const refreshToken = req.cookies.refreshToken;
   if (!refreshToken) {
@@ -239,27 +239,37 @@ const refresh = async (req, res) => {
 
   let payload;
   try {
-    payload = isTokenValid(refreshToken); // returns decoded payload
+    payload = isTokenValid(refreshToken); // decoded { user, refreshToken }
   } catch (err) {
     throw new CustomError.UnauthenticatedError("Authentication invalid");
   }
 
-  const existingToken = await Token.findOne({ user: payload.user.userId,refreshToken: payload.refreshToken, });
+  const existingToken = await Token.findOne({
+    user: payload.user.userId,
+    refreshToken: payload.refreshToken,
+  });
   if (!existingToken || !existingToken.isValid) {
     throw new CustomError.UnauthenticatedError("Authentication invalid");
   }
 
-  attachCookiesToResponse({
-    res,
-    user: {
-      userId: payload.user.userId,
-      name: payload.user.name,
-      role: payload.user.role,
-    },
-    refreshToken,
+  // Issue new access token
+  const newAccessToken = createJWT({
+    payload: { user: payload.user },
+    expiresIn: "15m",
   });
 
-  res.status(StatusCodes.OK).json({ success: true });
+  // Re‑attach cookies (optional, keeps them fresh)
+  attachCookiesToResponse({
+    res,
+    user: payload.user,
+    refreshToken: payload.refreshToken,
+  });
+
+  // Return new access token in JSON
+  res.status(StatusCodes.OK).json({
+    success: true,
+    accessToken: newAccessToken,
+  });
 };
 
 
