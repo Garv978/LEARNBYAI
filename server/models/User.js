@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const validator = require("validator");
 const bcrypt = require("bcryptjs");
+const crypto = require("crypto");
 
 const UserSchema = new mongoose.Schema({
   name: {
@@ -20,9 +21,7 @@ const UserSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: function () {
-      return this.provider === "local";
-    },
+    required:true,
     minlength: 6,
   },
   role: {
@@ -45,8 +44,6 @@ const UserSchema = new mongoose.Schema({
 });
 
 UserSchema.pre("save", async function () {
-  // console.log(this.modifiedPaths());
-  // console.log(this.isModified('name'));
   if (!this.password || !this.isModified("password")) {
     return;
   }
@@ -60,6 +57,34 @@ UserSchema.methods.comparePassword = async function (candidatePassword) {
   }
   const isMatch = await bcrypt.compare(candidatePassword, this.password);
   return isMatch;
+};
+
+UserSchema.methods.createVerificationToken = function () {
+  const rawToken = crypto.randomBytes(40).toString("hex");
+  this.verificationToken = crypto.createHash("sha256").update(rawToken).digest("hex");
+  return rawToken; // send this in email
+};
+
+// Generate and hash password reset token
+UserSchema.methods.createPasswordResetToken = function () {
+  const rawToken = crypto.randomBytes(40).toString("hex");
+  this.passwordToken = crypto.createHash("sha256").update(rawToken).digest("hex");
+  this.passwordTokenExpirationDate = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+  return rawToken; // send this in email
+};
+
+// Verify tokens by hashing input
+UserSchema.methods.isVerificationTokenValid = function (token) {
+  const hashedInput = crypto.createHash("sha256").update(token).digest("hex");
+  return this.verificationToken === hashedInput;
+};
+
+UserSchema.methods.isPasswordResetTokenValid = function (token) {
+  const hashedInput = crypto.createHash("sha256").update(token).digest("hex");
+  return (
+    this.passwordToken === hashedInput &&
+    this.passwordTokenExpirationDate > Date.now()
+  );
 };
 
 module.exports = mongoose.model("User", UserSchema);

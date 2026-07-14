@@ -1,14 +1,16 @@
 const User = require("../models/User");
 const { StatusCodes } = require("http-status-codes");
 const CustomError = require("../errors");
-const { attachCookiesToResponse, createTokenUser } = require("../utils");
-const { verify } = require("jsonwebtoken");
+const {
+  attachCookiesToResponse,
+  createTokenUser,
+  isTokenValid,
+} = require("../utils");
 const crypto = require("crypto");
-const { error } = require("console");
 const { sendEmail } = require("../utils");
 const Token = require("../models/Token");
+const API = require("../api.js");
 
-import API from "../api.js"
 
 const origin = API;
 
@@ -20,17 +22,16 @@ const register = async (req, res) => {
     throw new CustomError.BadRequestError("Email already exists");
   }
 
-  const role = "user"
-  const verificationToken = crypto.randomBytes(40).toString("hex");
+  const role = "user";
   const user = await User.create({
     name,
     email,
     password,
     role,
-    verificationToken,
   });
-
-  const verifyEmail = `${origin}/user/verify-email?token=${verificationToken}&email=${user.email}`;
+  const rawToken = user.createVerificationToken();
+  await user.save();
+  const verifyEmail = `${origin}/user/verify-email?token=${rawToken}&email=${user.email}`;
   console.log(verifyEmail);
   await sendEmail({
     to: user.email,
@@ -38,7 +39,7 @@ const register = async (req, res) => {
     html: `
     <h2>Welcome ${user.name}</h2>
     <p>Your verification token:</p>
-    <h1>${verificationToken}</h1>
+    <h1>${rawToken}</h1>
   <a href="${verifyEmail}">
     Verify Email
   </a>
@@ -52,11 +53,13 @@ const verifyEmail = async (req, res) => {
   const { verificationToken, email } = req.body;
   const user = await User.findOne({ email });
   if (!user) throw new CustomError.NotFoundError("User Not Registered");
-  if (user.verificationToken !== verificationToken)
+
+  const isValid = user.isVerificationTokenValid(verificationToken);
+  if (!isValid)
     throw new CustomError.UnauthenticatedError("Verification Failed");
   user.isVerified = true;
-  user.verified = Date.now();
-  user.verificationToken = "";
+  user.verified = new Date();
+  user.verificationToken = null;
   await user.save();
   res.status(StatusCodes.OK).json({ msg: "Verified" });
 };
@@ -65,9 +68,7 @@ const login = async (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
-    throw new CustomError.BadRequestError({
-      msg: "Please provide email and password",
-    });
+    throw new CustomError.BadRequestError("Please provide email and password");
   }
   const user = await User.findOne({ email });
 
@@ -108,6 +109,7 @@ const login = async (req, res) => {
 
   res.status(StatusCodes.OK).json({ user: tokenUser });
 };
+
 const logout = async (req, res) => {
   await Token.findOneAndDelete({ user: req.user.userId });
   res.cookie("accessToken", "logout", {
@@ -126,23 +128,19 @@ const forgotPassword = async (req, res) => {
   if (!email) throw new CustomError.BadRequestError("Please provide Email");
   const user = await User.findOne({ email: email });
   if (user) {
-    const passwordToken = crypto.randomBytes(40).toString("hex");
-    const verifyEmail = `${origin}/user/reset-password?token=${passwordToken}&email=${user.email}`;
+    const passwordToken = user.createPasswordResetToken();
+    await user.save();
+    const resetLink = `${origin}/user/reset-password?token=${passwordToken}&email=${user.email}`;
     await sendEmail({
       to: user.email,
       subject: "Reset Password",
       html: `
-    <h2>Welcome ${user.name} please reset your email by clicking on the</h2>
-  <a href="${verifyEmail}">
-    Verify Email
+    <h2>Hello ${user.name}, please reset your password by clicking below:</h2>
+  <a href="${resetLink}">
+    Reset Password
   </a>
   `,
     });
-    const tenMinutes = 10 * 60 * 1000;
-    const passwordExpirationDate = new Date(Date.now() + tenMinutes);
-    user.passwordToken = passwordToken;
-    user.passwordTokenExpirationDate = passwordExpirationDate;
-    await user.save();
   }
   res
     .status(StatusCodes.OK)
@@ -150,20 +148,56 @@ const forgotPassword = async (req, res) => {
 };
 
 const resetPassword = async (req, res) => {
-  const {email,token,newPassword} = req.body
-  if(!token || !email || !newPassword)
-      throw new CustomError.BadRequestError('Invalid')
-  const user = await User.findOne({email})
-  if(user){
-    const currentDate = Date.now()
-    if(user.passwordTokenExpirationDate>currentDate && user.passwordToken===token ){
-      user.password = password
-      user.passwordToken = null
-      useReducer.passwordExpirationDate=null
-      await user.save()
-    }
+  const { email, token, newPassword } = req.body;
+  if (!token || !email || !newPassword)
+    throw new CustomError.BadRequestError("Invalid");
+  const user = await User.findOne({ email });
+if (!user)
+    throw new CustomError.NotFoundError("User not found");
+  if (user) {
+    const isValid = user.isPasswordResetTokenValid(token);
+    if(!isValid)
+        throw new CustomError.UnauthenticatedError('Invalid  or expired Token');
+      user.password = newPassword;
+      user.passwordToken = null;
+      user.passwordTokenExpirationDate = null;
+      await user.save();
+  res.status(StatusCodes.OK).json({ msg: "Password reset successful" });
+
   }
 };
+
+const refresh = async (req, res) => {
+  const refreshToken = req.cookies.refreshToken;
+  if (!refreshToken) {
+    throw new CustomError.UnauthenticatedError("Invalid Authentication");
+  }
+
+  let payload;
+  try {
+    payload = isTokenValid(refreshToken); // returns decoded payload
+  } catch (err) {
+    throw new CustomError.UnauthenticatedError("Authentication invalid");
+  }
+
+  const existingToken = await Token.findOne({ user: payload.user.userId,refreshToken: payload.refreshToken, });
+  if (!existingToken || !existingToken.isValid) {
+    throw new CustomError.UnauthenticatedError("Authentication invalid");
+  }
+
+  attachCookiesToResponse({
+    res,
+    user: {
+      userId: payload.user.userId,
+      name: payload.user.name,
+      role: payload.user.role,
+    },
+    refreshToken,
+  });
+
+  res.status(StatusCodes.OK).json({ success: true });
+};
+
 
 module.exports = {
   register,
@@ -172,4 +206,5 @@ module.exports = {
   verifyEmail,
   forgotPassword,
   resetPassword,
+  refresh,
 };
