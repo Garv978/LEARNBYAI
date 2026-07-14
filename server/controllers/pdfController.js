@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const Pdf = require("../models/Pdf");
 const cloudinary = require("../config/cloudinary");
 const streamifier = require("streamifier");
-
+const pdfQueue = require("../queues/pdfQueue");
 const getAllPdfs = async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -103,7 +103,7 @@ const uploadPdf = async (req, res) => {
     });
 
     // Later:
-    // await pdfQueue.add("parse-pdf", { pdfId: pdf._id });
+    await pdfQueue.add("process-pdf", { pdfId: pdf._id });
 
   } catch (error) {
     res.status(500).json({
