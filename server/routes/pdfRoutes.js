@@ -1,5 +1,7 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
+
+const upload = require("../middleware/upload");
 
 const {
   getAllPdfs,
@@ -7,13 +9,25 @@ const {
   uploadPdf,
   deletePdf,
   getPdfStatus,
-} = require('../controllers/pdfController');
+} = require("../controllers/pdfController");
 
-// ✅ Routes
-router.get('/pdfs', getAllPdfs);                  // Get all PDFs for logged-in user
-router.get('/pdfs/:pdfId', getPdf);               // Get single PDF by ID
-router.post('/pdfs/upload', uploadPdf);           // Upload a new PDF          // Update metadata of a PDF
-router.delete('/pdfs/:pdfId', deletePdf);         // Delete a PDF
-router.get('/pdfs/:pdfId/status', getPdfStatus);  // Get processing status of a PDF
+// Get all PDFs
+router.get("/pdfs", getAllPdfs);
+
+// Get a single PDF
+router.get("/pdfs/:pdfId", getPdf);
+
+// Upload PDF
+router.post(
+  "/pdfs/upload",
+  upload.single("file"),
+  uploadPdf
+);
+
+// Delete PDF
+router.delete("/pdfs/:pdfId", deletePdf);
+
+// Get processing status
+router.get("/pdfs/:pdfId/status", getPdfStatus);
 
 module.exports = router;
