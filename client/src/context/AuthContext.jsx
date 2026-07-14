@@ -1,9 +1,14 @@
 // AuthContext.js
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { login as loginAPI, register as registerAPI } from "../services/auth";
+import {
+  login as loginAPI,
+  refresh as refreshAPI,
+  register as registerAPI,
+  verifyEmail as verifyEmailAPI,
+} from "../services/AuthServices";
 
-import { jwtDecode } from "jwt-decode";
+import {jwtDecode} from "jwt-decode";
 
 const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
@@ -28,7 +33,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (userData) => {
     try {
-      const res = await loginAPI(userData); // use your wrapper
+      const res = await loginAPI(userData);
       localStorage.setItem("accessToken", res.data.accessToken);
       setUser(jwtDecode(res.data.accessToken));
       setIsAuthenticated(true);
@@ -43,8 +48,11 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (userData) => {
     try {
-      await registerAPI(userData); // use your wrapper
-      return { success: true };
+      await registerAPI(userData);
+      return {
+        success: true,
+        message: "Registration successful. Please check your email to verify your account.",
+      };
     } catch (err) {
       return {
         success: false,
@@ -59,9 +67,45 @@ export const AuthProvider = ({ children }) => {
     setIsAuthenticated(false);
   };
 
+  const verifyEmail = async (userData) => {
+    try {
+      await verifyEmailAPI(userData);
+      return { success: true };
+    } catch (err) {
+      return {
+        success: false,
+        message: err.response?.data?.message || "Verification failed",
+      };
+    }
+  };
+
+  const refresh = async () => {
+    try {
+      const res = await refreshAPI(); // no userData needed, backend uses cookies
+      localStorage.setItem("accessToken", res.data.accessToken);
+      setUser(jwtDecode(res.data.accessToken));
+      setIsAuthenticated(true);
+      return { success: true };
+    } catch (err) {
+      return {
+        success: false,
+        message: err.response?.data?.message || "Refresh failed",
+      };
+    }
+  };
+
   return (
     <AuthContext.Provider
-      value={{ user, isAuthenticated, loading, login, register, logout }}
+      value={{
+        user,
+        isAuthenticated,
+        loading,
+        login,
+        register,
+        logout,
+        verifyEmail,
+        refresh,
+      }}
     >
       {children}
     </AuthContext.Provider>

@@ -1,134 +1,155 @@
 import React, { useState } from "react";
 
+import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { useNavigate } from "react-router-dom";
 
 const Register = () => {
-  const [state, setState] = useState("login");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const navigate = useNavigate();
-  const { login, register } = useAuth();
+  const { register } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setSuccess("");
     setLoading(true);
 
     try {
-      if (state === "login") {
-        await login({ email, password });
+      const result = await register({ name, email, password });
+
+      if (result.success) {
+        setSuccess(
+          "Registration successful! Please check your email to verify your account.",
+        );
       } else {
-        await register({ name, email, password });
+        setError(result.message);
       }
-      navigate("/"); // redirect after success
     } catch (err) {
-      setError(err.response?.data?.message || "Something went wrong");
+      console.error("Register error:", err);
+
+      setError(
+        err.response?.data?.message ||
+          err.response?.data?.msg ||
+          err.message ||
+          "Something went wrong",
+      );
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <>
+    <div className="flex items-center justify-center min-h-screen bg-gray-50">
       <form
         onSubmit={handleSubmit}
-        className="w-full sm:w-87.5 text-center bg-white/6 border border-white/10 rounded-2xl px-8"
+        className="max-w-96 w-full text-center border border-gray-300/60 rounded-2xl px-8 bg-white"
       >
-        <h1 className="text-white text-3xl mt-10 font-medium">
-          {state === "login" ? "Login" : "Sign up"}
-        </h1>
-
-        <p className="text-gray-400 text-sm mt-2">
-          Please {state === "login" ? "sign in" : "create an account"} to continue
+        <h1 className="text-gray-900 text-3xl mt-10 font-medium">Sign up</h1>
+        <p className="text-gray-500 text-sm mt-2">
+          Please create an account to continue
         </p>
 
-        {error && (
-          <div className="text-red-400 text-sm mt-2">{error}</div>
+        {error && <div className="text-red-500 text-sm mt-2">{error}</div>}
+        {success && (
+          <div className="text-green-600 text-sm mt-2">{success}</div>
         )}
 
-        {state !== "login" && (
-          <div className="flex items-center mt-6 w-full bg-white/5 ring-2 ring-white/10 focus-within:ring-indigo-500/60 h-12 rounded-full overflow-hidden pl-6 gap-2 transition-all ">
-            <svg /* icon omitted for brevity */ />
-            <input
-              type="text"
-              name="name"
-              placeholder="Name"
-              className="w-full bg-transparent text-white placeholder-white/60 border-none outline-none"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
+        <div className="flex items-center w-full mt-10 bg-white border border-gray-300/80 h-12 rounded-full overflow-hidden pl-6 gap-2">
+          {/* Name icon */}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            className="text-gray-400"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="12" cy="8" r="5" /> <path d="M20 21a8 8 0 0 0-16 0" />
+          </svg>
+          <input
+            type="text"
+            placeholder="Name"
+            className="bg-transparent text-gray-500 placeholder-gray-500 outline-none text-sm w-full h-full"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
+        </div>
+
+        <div className="flex items-center mt-4 w-full bg-white border border-gray-300/80 h-12 rounded-full overflow-hidden pl-6 gap-2">
+          {/* Email icon */}
+          <svg
+            width="16"
+            height="11"
+            viewBox="0 0 16 11"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              fillRule="evenodd"
+              clipRule="evenodd"
+              d="M0 .55.571 0H15.43l.57.55v9.9l-.571.55H.57L0 10.45zm1.143 1.138V9.9h13.714V1.69l-6.503 4.8h-.697zM13.749 1.1H2.25L8 5.356z"
+              fill="#6B7280"
             />
-          </div>
-        )}
-
-        <div className="flex items-center w-full mt-4 bg-white/5 ring-2 ring-white/10 focus-within:ring-indigo-500/60 h-12 rounded-full overflow-hidden pl-6 gap-2 transition-all ">
-          <svg /* icon omitted for brevity */ />
+          </svg>
           <input
             type="email"
-            name="email"
             placeholder="Email id"
-            className="w-full bg-transparent text-white placeholder-white/60 border-none outline-none"
+            className="bg-transparent text-gray-500 placeholder-gray-500 outline-none text-sm w-full h-full"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
           />
         </div>
 
-        <div className="flex items-center mt-4 w-full bg-white/5 ring-2 ring-white/10 focus-within:ring-indigo-500/60 h-12 rounded-full overflow-hidden pl-6 gap-2 transition-all ">
-          <svg /* icon omitted for brevity */ />
+        <div className="flex items-center mt-4 w-full bg-white border border-gray-300/80 h-12 rounded-full overflow-hidden pl-6 gap-2">
+          {/* Password icon */}
+          <svg
+            width="13"
+            height="17"
+            viewBox="0 0 13 17"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M13 8.5c0-.938-.729-1.7-1.625-1.7h-.812V4.25C10.563 1.907 8.74 0 6.5 0S2.438 1.907 2.438 4.25V6.8h-.813C.729 6.8 0 7.562 0 8.5v6.8c0 .938.729 1.7 1.625 1.7h9.75c.896 0 1.625-.762 1.625-1.7zM4.063 4.25c0-1.406 1.093-2.55 2.437-2.55s2.438 1.144 2.438 2.55V6.8H4.061z"
+              fill="#6B7280"
+            />
+          </svg>
           <input
             type="password"
-            name="password"
             placeholder="Password"
-            className="w-full bg-transparent text-white placeholder-white/60 border-none outline-none"
+            className="bg-transparent text-gray-500 placeholder-gray-500 outline-none text-sm w-full h-full"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
           />
         </div>
 
-        <div className="mt-4 text-left">
-          <button className="text-sm text-indigo-400 hover:underline">
-            Forget password?
-          </button>
-        </div>
-
         <button
           type="submit"
           disabled={loading}
-          className="mt-2 w-full h-11 rounded-full text-white bg-indigo-600 hover:bg-indigo-500 transition disabled:opacity-50"
+          className="mt-6 w-full h-11 rounded-full text-white bg-indigo-500 hover:opacity-90 transition-opacity disabled:opacity-50"
         >
-          {loading
-            ? state === "login"
-              ? "Logging in..."
-              : "Creating..."
-            : state === "login"
-            ? "Login"
-            : "Sign up"}
+          {loading ? "Creating..." : "Sign up"}
         </button>
 
-        <p
-          onClick={() =>
-            setState((prev) => (prev === "login" ? "register" : "login"))
-          }
-          className="text-gray-400 text-sm mt-3 mb-11 cursor-pointer"
-        >
-          {state === "login" ? "Don't have an account?" : "Already have an account?"}
-          <span className="text-indigo-400 hover:underline ml-1">click here</span>
+        <p className="text-gray-500 text-sm mt-3 mb-11">
+          Already have an account?{" "}
+          <Link to="/login" className="text-indigo-500">
+            Login
+          </Link>
         </p>
       </form>
-
-      {/* Soft Backdrop */}
-      <div className="fixed inset-0 -z-1 pointer-events-none">
-        <div className="absolute left-1/2 top-20 -translate-x-1/2 w-245 h-115 bg-linear-to-tr from-indigo-800/35 to-transparent rounded-full blur-3xl" />
-        <div className="absolute right-12 bottom-10 w-105 h-55 bg-linear-to-bl from-indigo-700/35 to-transparent rounded-full blur-2xl" />
-      </div>
-    </>
+    </div>
   );
 };
 
