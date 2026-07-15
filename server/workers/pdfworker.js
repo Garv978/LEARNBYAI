@@ -3,6 +3,9 @@ const connection = require("../config/redis");
 
 const Pdf = require("../models/Pdf");
 
+const axios = require("axios");
+const {parsedPdfBuffer} = require('../services')
+
 const worker = new Worker(
   "pdf-processing",
 
@@ -21,10 +24,21 @@ const worker = new Worker(
     // Later we'll do:
     //
     // Download PDF
+    const response = await axios.get(pdf.fileUrl, {
+      responseType: "arraybuffer",
+    });
+
+    const buffer = Buffer.from(response.data);
+
     // Parse PDF
+    const parsed = parsedPdfBuffer(buffer);
+
     // Chunk Text
+    
     // Generate Embeddings
+    
     // Save Vectors
+    
     //
     // -----------------------
 
@@ -36,7 +50,7 @@ const worker = new Worker(
   {
     connection,
     concurrency: 2,
-  }
+  },
 );
 
 worker.on("completed", (job) => {
