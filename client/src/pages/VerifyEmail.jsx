@@ -8,31 +8,49 @@ const VerifyEmail = () => {
   const token = searchParams.get("token");
   const email = searchParams.get("email");
 
-  const { verifyEmail } = useAuth();
+  const { verifyEmail, resendVerifyEmail } = useAuth();
 
   const [status, setStatus] = useState("pending"); // pending | success | error
   const [message, setMessage] = useState("");
 
 useEffect(() => {
   const verify = async () => {
-    const result = await verifyEmail({ verificationToken: token, email });
-    if (result.success) {
-      setStatus("success");
-      setMessage("Email verified successfully! You can now log in.");
-    } else {
+    try {
+      const result = await verifyEmail({
+        verificationToken: token,
+        email,
+      });
+
+      if (result.success) {
+        setStatus("success");
+        setMessage("Email verified successfully! You can now log in.");
+      } else {
+        setStatus("error");
+        setMessage(result.message || "Verification failed.");
+      }
+    } catch (err) {
       setStatus("error");
-      setMessage(result.message);
+      setMessage(
+        err?.response?.data?.msg ||
+          err?.message ||
+          "Verification link has expired."
+      );
     }
   };
 
-  if (token && email) {
-    verify();
-  } else {
+  if (!token || !email) {
     setStatus("error");
     setMessage("Invalid verification link.");
+    return;
   }
-}, [token, email, verifyEmail]);
 
+  verify();
+}, [token, email]);
+
+  const handleResend = async () => {
+    const result = await resendVerifyEmail({ email });
+    setMessage(result.message);
+  };
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50">
@@ -67,6 +85,7 @@ useEffect(() => {
 
         {status === "error" && (
           <button
+            onClick={handleResend}
             className="mt-8 w-full h-11 rounded-full bg-indigo-500 hover:opacity-90 text-white transition"
           >
             Resend Email

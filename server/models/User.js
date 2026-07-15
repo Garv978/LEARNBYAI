@@ -30,6 +30,7 @@ const UserSchema = new mongoose.Schema({
     default: "user",
   },
   verificationToken: String,
+  verificationTokenExpiry: Date,
   isVerified: {
     type: Boolean,
     default: false,
@@ -62,8 +63,16 @@ UserSchema.methods.comparePassword = async function (candidatePassword) {
 UserSchema.methods.createVerificationToken = function () {
   const rawToken = crypto.randomBytes(40).toString("hex");
   this.verificationToken = crypto.createHash("sha256").update(rawToken).digest("hex");
+  this.verificationTokenExpiry = new Date(Date.now() + 10*60*1000);
   return rawToken; // send this in email
 };
+
+// Verify tokens by hashing input
+UserSchema.methods.isVerificationTokenValid = function (token) {
+  const hashedInput = crypto.createHash("sha256").update(token).digest("hex");
+  return this.verificationToken === hashedInput && this.verificationTokenExpiry > Date.now();
+};
+
 
 // Generate and hash password reset token
 UserSchema.methods.createPasswordResetToken = function () {
@@ -73,11 +82,6 @@ UserSchema.methods.createPasswordResetToken = function () {
   return rawToken; // send this in email
 };
 
-// Verify tokens by hashing input
-UserSchema.methods.isVerificationTokenValid = function (token) {
-  const hashedInput = crypto.createHash("sha256").update(token).digest("hex");
-  return this.verificationToken === hashedInput;
-};
 
 UserSchema.methods.isPasswordResetTokenValid = function (token) {
   const hashedInput = crypto.createHash("sha256").update(token).digest("hex");

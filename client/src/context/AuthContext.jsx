@@ -6,6 +6,7 @@ import {
   login as loginAPI,
   refresh as refreshAPI,
   register as registerAPI,
+  resendVerifyEmail as resendVerifyEmailAPI,
   resetPassword as resetPasswordAPI,
   verifyEmail as verifyEmailAPI,
 } from "../services/AuthServices";
@@ -94,7 +95,17 @@ const logout = async () => {
       };
     }
   };
-
+  const resendVerifyEmail = async (userData) => {
+    try{
+      await resendVerifyEmailAPI(userData);
+      return { success: true, message: "Verification email resent" };
+    }catch(err){
+      return{
+        success: false,
+        message: err.response?.data?.message || "Resend verification email failed",
+      }
+    }
+  }
   const refresh = async () => {
     try {
       const res = await refreshAPI(); // no userData needed, backend uses cookies
@@ -148,6 +159,7 @@ const logout = async () => {
         register,
         logout,
         verifyEmail,
+        resendVerifyEmail,
         refresh,
         forgotPassword,
         resetPassword,

@@ -20,6 +20,10 @@ export const verifyEmail = (userData) => {
   return API.post("/auth/verify-email", userData);
 };
 
+export const resendVerifyEmail = (userData) => {
+  return API.post("/auth/resend-verify-email", userData);
+}
+
 export const forgotPassword = async (userData) => {
   const res = await API.post("/auth/forgot-password", userData);
   return res.data;
@@ -29,3 +33,4 @@ export const resetPassword = async (userData) => {
   const res = await API.post("/auth/reset-password", userData);
   return res.data;
 };
+

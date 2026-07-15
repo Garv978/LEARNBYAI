@@ -42,7 +42,6 @@ const register = async (req, res) => {
       html: `
         <h2>Welcome ${user.name}</h2>
         <p>Your verification token:</p>
-        <h1>${rawToken}</h1>
         <a href="${verifyEmail}">Verify Email</a>
       `,
     });
@@ -70,13 +69,14 @@ const verifyEmail = async (req, res) => {
     const isValid = user.isVerificationTokenValid(verificationToken);
     if (!isValid) {
       return res
-        .status(StatusCodes.UNAUTHORIZED)
+        .status(StatusCodes.BAD_REQUEST)
         .json({ success: false, message: "Verification failed" });
     }
 
     user.isVerified = true;
     user.verified = new Date();
     user.verificationToken = null;
+    user.verificationTokenExpiry= null;
     await user.save();
 
     res.status(StatusCodes.OK).json({ success: true, message: "Email verified successfully" });
@@ -86,6 +86,69 @@ const verifyEmail = async (req, res) => {
       .json({ success: false, message: err.message || "Server error" });
   }
 };
+
+
+const resendVerifyEmail = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Email is required"
+      });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: "User not registered"
+      });
+    }
+
+    if (user.isVerified) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "User is already verified"
+      });
+    }
+
+    // Cooldown check: block if token still valid
+    if (user.verificationTokenExpiry && user.verificationTokenExpiry > Date.now()) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Please wait before requesting another email"
+      });
+    }
+
+    // Generate new token + expiry
+    const rawToken = user.createVerificationToken();
+    await user.save();
+
+    const verifyEmailLink = `${origin}/verify-email?token=${rawToken}&email=${user.email}`;
+
+    await sendEmail({
+      to: user.email,
+      subject: "Verify Email",
+      html: `
+        <h2>Welcome ${user.name}</h2>
+        <p>Click the link below to verify your account:</p>
+        <a href="${verifyEmailLink}">Verify Email</a>
+      `,
+    });
+
+    return res.status(StatusCodes.OK).json({
+      success: true,
+      message: "Verification email resent. Please check your inbox."
+    });
+  } catch (err) {
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: err.message || "Server error"
+    });
+  }
+};
+
 
 const login = async (req, res) => {
   try {
@@ -278,6 +341,7 @@ module.exports = {
   login,
   logout,
   verifyEmail,
+  resendVerifyEmail,
   forgotPassword,
   resetPassword,
   refresh,
