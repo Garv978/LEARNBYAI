@@ -20,6 +20,63 @@
 > An AI-powered learning platform that transforms PDFs into an interactive study experience using Retrieval-Augmented Generation (RAG).
 
 
+## 🏗️ Architecture
+
+
+A high-level view of how the main pieces fit together:
+
+```mermaid
+flowchart LR
+    User["👤 User / Browser"]
+
+    FE["🖼️ React + Vite Frontend"]
+
+    API["🚀 Express.js API Server"]
+
+    Auth["🔐 JWT Authentication"]
+
+    Mongo["🍃 MongoDB"]
+
+    Cloud["☁️ Cloudinary\n(PDF Storage)"]
+
+    Queue["📬 BullMQ Queue"]
+
+    Redis["⚡ Redis"]
+
+    Worker["⚙️ Background Worker"]
+
+    Parse["📄 PDF Parser"]
+
+    Embed["🧠 Embedding Generator"]
+
+    Pinecone["📌 Pinecone Vector DB"]
+
+    OpenAI["🤖 OpenAI API"]
+
+    User --> FE
+    FE --> API
+
+    API --> Auth
+    API --> Mongo
+    API --> Cloud
+
+    API --> Queue
+    Queue --> Redis
+    Redis --> Worker
+
+    Worker --> Parse
+    Parse --> Embed
+    Embed --> OpenAI
+    Embed --> Pinecone
+
+    FE -->|"Chat with PDF"| API
+    API --> Pinecone
+    API --> OpenAI
+    API --> Mongo
+    API --> FE
+```
+
+
 ## ✨ Overview
 
 LearnWithAI allows users to upload PDF documents and instantly interact with them using AI. Instead of reading hundreds of pages manually, users can:
@@ -151,61 +208,6 @@ Answer Returned to User
 
 ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=white) ![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=white) ![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white) ![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)
 
-## 🏗️ Architecture
-
-
-A high-level view of how the main pieces fit together:
-
-```mermaid
-flowchart LR
-    User["👤 User / Browser"]
-
-    FE["🖼️ React + Vite Frontend"]
-
-    API["🚀 Express.js API Server"]
-
-    Auth["🔐 JWT Authentication"]
-
-    Mongo["🍃 MongoDB"]
-
-    Cloud["☁️ Cloudinary\n(PDF Storage)"]
-
-    Queue["📬 BullMQ Queue"]
-
-    Redis["⚡ Redis"]
-
-    Worker["⚙️ Background Worker"]
-
-    Parse["📄 PDF Parser"]
-
-    Embed["🧠 Embedding Generator"]
-
-    Pinecone["📌 Pinecone Vector DB"]
-
-    OpenAI["🤖 OpenAI API"]
-
-    User --> FE
-    FE --> API
-
-    API --> Auth
-    API --> Mongo
-    API --> Cloud
-
-    API --> Queue
-    Queue --> Redis
-    Redis --> Worker
-
-    Worker --> Parse
-    Parse --> Embed
-    Embed --> OpenAI
-    Embed --> Pinecone
-
-    FE -->|"Chat with PDF"| API
-    API --> Pinecone
-    API --> OpenAI
-    API --> Mongo
-    API --> FE
-```
 
 ## ⚡ Quick Start
 
@@ -420,11 +422,3 @@ Contributions are welcome! Here's the standard flow:
 Please follow the existing code style and include tests for new behavior where applicable.
 
 ---
-
-<div align="center">
-
-[![Made with ReadmeBuddy](https://img.shields.io/badge/Made%20with-ReadmeBuddy-8B5CFF?style=for-the-badge&logo=markdown&logoColor=white)](https://readmebuddy.com)
-
-<sub>Generate beautiful READMEs in seconds → <a href="https://readmebuddy.com">readmebuddy.com</a></sub>
-
-</div>
