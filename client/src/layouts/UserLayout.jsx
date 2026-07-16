@@ -5,12 +5,12 @@ import Sidebar from "../components/Sidebar";
 
 const UserLayout = () => {
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-zinc-950 text-white">
       {/* Sidebar */}
       <Sidebar />
 
       {/* Main Content */}
-      <main className="flex-1 p-8 overflow-y-auto">
+      <main className="flex-1 p-8 overflow-y-auto bg-zinc-950">
         <Outlet />
       </main>
     </div>

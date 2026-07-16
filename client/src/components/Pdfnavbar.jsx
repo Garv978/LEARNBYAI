@@ -1,4 +1,4 @@
-import { Menu, X } from "lucide-react";
+import { Menu, X } from "react-icons/fa"; // switched to react-icons for consistency
 import { NavLink, useParams } from "react-router-dom";
 
 import { useState } from "react";
@@ -16,7 +16,7 @@ const PdfNavbar = () => {
   ];
 
   return (
-    <nav className="mx-6 mt-6 rounded-xl border border-slate-700 bg-slate-900 text-white">
+    <nav className="mx-6 mt-6 rounded-xl border border-zinc-800 bg-zinc-950 text-white">
 
       {/* Desktop */}
       <div className="hidden md:flex items-center justify-center gap-10 py-4">
@@ -27,8 +27,8 @@ const PdfNavbar = () => {
             className={({ isActive }) =>
               `transition font-medium ${
                 isActive
-                  ? "text-indigo-400 border-b-2 border-indigo-400 pb-1"
-                  : "text-slate-300 hover:text-white"
+                  ? "text-blue-500 border-b-2 border-blue-500 pb-1"
+                  : "text-zinc-400 hover:text-white"
               }`
             }
           >
@@ -39,15 +39,15 @@ const PdfNavbar = () => {
 
       {/* Mobile */}
       <div className="flex items-center justify-between px-4 py-4 md:hidden">
-        <span className="font-semibold">PDF Workspace</span>
+        <span className="font-semibold text-white">PDF Workspace</span>
 
-        <button onClick={() => setOpen(!open)}>
+        <button onClick={() => setOpen(!open)} className="text-white">
           {open ? <X size={22} /> : <Menu size={22} />}
         </button>
       </div>
 
       {open && (
-        <div className="flex flex-col border-t border-slate-700 px-4 py-4 md:hidden">
+        <div className="flex flex-col border-t border-zinc-800 px-4 py-4 md:hidden">
           {links.map((link) => (
             <NavLink
               key={link.path}
@@ -56,8 +56,8 @@ const PdfNavbar = () => {
               className={({ isActive }) =>
                 `py-2 ${
                   isActive
-                    ? "text-indigo-400"
-                    : "text-slate-300 hover:text-white"
+                    ? "text-blue-500"
+                    : "text-zinc-400 hover:text-white"
                 }`
               }
             >
