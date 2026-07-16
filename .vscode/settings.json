@@ -1,8 +1,11 @@
 {
   "cSpell.words": [
+    "BAAI",
     "bullmq",
     "Cooldown",
     "Garv",
+    "huggingface",
+    "langchain",
     "LEARNBYAI",
     "learnwithai",
     "Leetcode",
@@ -13,6 +16,7 @@
     "pdfworker",
     "readmebuddy",
     "streamifier",
-    "Tayal"
+    "Tayal",
+    "textsplitters"
   ]
 }
