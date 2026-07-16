@@ -25,13 +25,58 @@ LEARNBYAI — a frontend web app built with JavaScript, React, Tailwind CSS, Vit
 
 ## 🏗️ Architecture
 
+
 A high-level view of how the main pieces fit together:
 
 ```mermaid
-flowchart TD
+flowchart LR
     User["👤 User / Browser"]
-    FE["🖼️ React Frontend"]
+
+    FE["🖼️ React + Vite Frontend"]
+
+    API["🚀 Express.js API Server"]
+
+    Auth["🔐 JWT Authentication"]
+
+    Mongo["🍃 MongoDB"]
+
+    Cloud["☁️ Cloudinary\n(PDF Storage)"]
+
+    Queue["📬 BullMQ Queue"]
+
+    Redis["⚡ Redis"]
+
+    Worker["⚙️ Background Worker"]
+
+    Parse["📄 PDF Parser"]
+
+    Embed["🧠 Embedding Generator"]
+
+    Pinecone["📌 Pinecone Vector DB"]
+
+    OpenAI["🤖 OpenAI API"]
+
     User --> FE
+    FE --> API
+
+    API --> Auth
+    API --> Mongo
+    API --> Cloud
+
+    API --> Queue
+    Queue --> Redis
+    Redis --> Worker
+
+    Worker --> Parse
+    Parse --> Embed
+    Embed --> OpenAI
+    Embed --> Pinecone
+
+    FE -->|"Chat with PDF"| API
+    API --> Pinecone
+    API --> OpenAI
+    API --> Mongo
+    API --> FE
 ```
 
 ## ⚡ Quick Start
