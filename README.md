@@ -15,9 +15,137 @@
 - [Contributors](#contributors)
 - [Contributing](#contributing)
 
-## 📝 Description
+# 📚 LearnWithAI
 
-LEARNBYAI — a frontend web app built with JavaScript, React, Tailwind CSS, Vite.
+> An AI-powered learning platform that transforms PDFs into an interactive study experience using Retrieval-Augmented Generation (RAG).
+
+
+## ✨ Overview
+
+LearnWithAI allows users to upload PDF documents and instantly interact with them using AI. Instead of reading hundreds of pages manually, users can:
+
+- 💬 Chat with their PDFs
+- 📝 Generate AI summaries
+- 🎯 Create flashcards
+- ❓ Generate quizzes
+- 📖 Take smart notes
+
+Large PDF processing is handled asynchronously using **BullMQ** and **Redis**, ensuring the application remains fast and responsive.
+
+---
+
+## 🚀 Features
+
+### 📄 PDF Management
+
+- Upload PDFs securely
+- Cloudinary storage
+- View uploaded PDFs
+- Delete PDFs
+- Processing status tracking
+
+---
+
+### 🤖 AI Features
+
+- Chat with PDF using RAG
+- AI-generated summaries
+- Flashcard generation
+- Quiz generation
+- Context-aware responses
+- Semantic document search
+
+---
+
+### 🔐 Authentication
+
+- JWT Authentication
+- Secure HTTP-only cookies
+- Protected routes
+- User-specific documents
+
+---
+
+### ⚡ Background Processing
+
+PDF processing runs in the background:
+
+- Text extraction
+- Text chunking
+- Embedding generation
+- Pinecone indexing
+- Status updates
+
+This prevents long upload requests and improves scalability.
+
+---
+
+## 🧠 How It Works
+
+```text
+                Upload PDF
+                     │
+                     ▼
+              Express Backend
+                     │
+                     ▼
+        Store PDF in Cloudinary
+                     │
+                     ▼
+          Save Metadata in MongoDB
+                     │
+                     ▼
+          Create BullMQ Processing Job
+                     │
+                     ▼
+               Redis Queue
+                     │
+                     ▼
+            Background Worker
+                     │
+                     ▼
+            Extract PDF Text
+                     │
+                     ▼
+             Split into Chunks
+                     │
+                     ▼
+      Generate OpenAI Embeddings
+                     │
+                     ▼
+      Store Embeddings in Pinecone
+                     │
+                     ▼
+          PDF Ready for Chat
+```
+
+---
+
+## 💬 Chat Flow
+
+```text
+User Question
+      │
+      ▼
+Generate Query Embedding
+      │
+      ▼
+Search Similar Chunks
+      │
+      ▼
+Retrieve Context
+      │
+      ▼
+Send Context + Prompt
+      │
+      ▼
+OpenAI Response
+      │
+      ▼
+Answer Returned to User
+```
+
+---
 
 ## 🛠️ Tech Stack
 
@@ -92,18 +220,73 @@ npm install
 # 3. Start the dev server
 npm run dev
 ```
-
 ## 📦 Key Dependencies
 
-```
-@tailwindcss/vite: ^4.3.2
-axios: ^1.18.1
-jwt-decode: ^4.0.0
-lucide-react: ^1.24.0
+### 🎨 Frontend
+
+```text
 react: ^19.2.7
 react-dom: ^19.2.7
 react-router-dom: ^7.18.1
+axios: ^1.18.1
+jwt-decode: ^4.0.0
+lucide-react: ^1.24.0
 tailwindcss: ^4.3.2
+@tailwindcss/vite: ^4.3.2
+```
+
+### 🚀 Backend
+
+```text
+express
+mongoose
+jsonwebtoken
+bcryptjs
+cookie-parser
+cors
+dotenv
+helmet
+morgan
+express-rate-limit
+express-fileupload
+cloudinary
+multer
+streamifier
+http-status-codes
+```
+
+### 🤖 AI & RAG
+
+```text
+openai
+langchain
+@langchain/openai
+@langchain/community
+@langchain/textsplitters
+@langchain/pinecone
+@pinecone-database/pinecone
+pdf-parse
+```
+
+### ⚡ Background Jobs
+
+```text
+bullmq
+ioredis
+```
+
+### 🔍 Validation
+
+```text
+zod
+```
+
+### 🛠️ Development
+
+```text
+nodemon
+eslint
+vite
 ```
 
 ## 🚀 Available Scripts
