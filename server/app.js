@@ -17,6 +17,7 @@ const connectDB = require('./db/connect');
 const authRouter = require('./routes/authRoutes');
 const userRouter = require('./routes/userRoutes');
 // const pdfRouter = require('./routes/pdfRoutes');
+const feedbackRouter = require('./routes/feedbackRoutes');
 
 // middleware
 const {authenticateUser} = require('./middleware/authentication')
@@ -36,6 +37,7 @@ app.use(cookieParser(process.env.JWT_SECRET));
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/user',authenticateUser, userRouter);
 // app.use('/api/v1',authenticateUser,pdfRouter)
+app.use('/api/v1', feedbackRouter)
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);
 
