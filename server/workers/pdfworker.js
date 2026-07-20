@@ -1,3 +1,4 @@
+require("dotenv").config();
 const { Worker } = require("bullmq");
 const axios = require("axios");
 
@@ -71,11 +72,7 @@ const worker = new Worker(
       // Pinecone Index
       // -----------------------------
       const index = getIndex();
-      await upsertVectors(index, vectors);
 
-      // -----------------------------
-      // Generate Embeddings
-      // -----------------------------
       const vectors = await Promise.all(
         chunks.map(async (chunk, i) => {
           const embedding = await createEmbedding(chunk);
@@ -90,12 +87,9 @@ const worker = new Worker(
               text: chunk,
             },
           };
-        })
+        }),
       );
 
-      // -----------------------------
-      // Upload to Pinecone
-      // -----------------------------
       await upsertVectors(index, vectors);
 
       // -----------------------------
@@ -113,7 +107,7 @@ const worker = new Worker(
   {
     connection,
     concurrency: 2,
-  }
+  },
 );
 
 worker.on("completed", (job) => {

@@ -6,14 +6,14 @@ const FeedbackSchema = new mongoose.Schema(
       type: String,
       required: [true, "First name is required"],
       trim: true,
-      minlength: 2,
+      minlength: 3,
       maxlength: 50,
     },
     lastName: {
       type: String,
       required: [true, "Last name is required"],
       trim: true,
-      minlength: 2,
+      minlength: 3,
       maxlength: 50,
     },
     email: {

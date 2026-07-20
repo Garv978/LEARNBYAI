@@ -5,13 +5,24 @@ const { register, login, logout,verifyEmail,resendVerifyEmail,resetPassword,forg
  } = require('../controllers/authController');
 const {authenticateUser} = require('../middleware/authentication')
 
-router.post('/register', register);
-router.post('/login', login);
-router.delete('/logout', authenticateUser,logout);
-router.post('/refresh', refresh)
-router.post('/verify-email', verifyEmail)
-router.post('/resend-verify-email', resendVerifyEmail)
-router.post('/reset-password',resetPassword)
-router.post('/forgot-password', forgotPassword)
+const validateRequest= require('../middleware/validate')
+
+const {
+  registerSchema,
+  loginSchema,
+  verifyEmailSchema,
+  resendVerifyEmailSchema,
+  resetPasswordSchema,
+  forgotPasswordSchema,
+} = require("../schemas/authSchema");
+
+router.post("/register",validateRequest(registerSchema),register);
+router.post("/login",validateRequest(loginSchema),login);
+router.delete("/logout",authenticateUser,logout);
+router.post("/refresh",refresh);
+router.post("/verify-email",validateRequest(verifyEmailSchema),verifyEmail);
+router.post("/resend-verify-email",validateRequest(resendVerifyEmailSchema),resendVerifyEmail);
+router.post("/reset-password",validateRequest(resetPasswordSchema),resetPassword);
+router.post("/forgot-password",validateRequest(forgotPasswordSchema),forgotPassword);
 
 module.exports = router;
