@@ -4,11 +4,11 @@ const connection = require("../config/redis");
 const pdfQueue = new Queue("pdf-processing", {
   connection,
   defaultJobOptions: {
-    attempts: 3, // retry 3 times if failed
+    attempts: 1, // retry 3 times if failed
 
-    removeOnComplete: 100,
+    removeOnComplete: 5,
 
-    removeOnFail: 50,
+    removeOnFail: 5,
   },
 });
 

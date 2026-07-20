@@ -1,8 +1,15 @@
 const IORedis = require("ioredis");
-console.log("REDIS_URL =", process.env.REDIS_URL);
+
 const connection = new IORedis(process.env.REDIS_URL, {
   maxRetriesPerRequest: null,
   enableReadyCheck: false,
+});
+connection.on("connect", () => {
+  console.log("✅ Connected to Upstash");
+});
+
+connection.on("error", (err) => {
+  console.log("❌ Redis Error:", err);
 });
 
 module.exports = connection;
