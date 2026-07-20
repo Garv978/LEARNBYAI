@@ -41,14 +41,17 @@ const UserSchema = new mongoose.Schema({
 // Hash password before saving
 UserSchema.pre("save", async function () {
   if (!this.password || !this.isModified("password")) return;
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
+
+  const peppered = this.password + process.env.PASSWORD_PEPPER;
+  const salt = await bcrypt.genSalt(12);
+  this.password = await bcrypt.hash(peppered, salt);
 });
 
 // Compare password
 UserSchema.methods.comparePassword = async function (candidatePassword) {
   if (!this.password) return false;
-  return await bcrypt.compare(candidatePassword, this.password);
+  const candidatePepperedPassword= candidatePassword +  process.env.PASSWORD_PEPPER;
+  return await bcrypt.compare(candidatePepperedPassword, this.password);
 };
 
 // Verification token

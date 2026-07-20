@@ -27,7 +27,7 @@ const register = async (req, res) => {
     if (emailAlreadyExists) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ success: false, message: "Unable to create a new account." });
+        .json({ success: false, message: "Email already exists" });
     }
 
     const role = "user";
