@@ -7,6 +7,8 @@ const {authenticateUser} = require('../middleware/authentication')
 
 const validateRequest= require('../middleware/validate')
 
+
+
 const {
   registerSchema,
   loginSchema,
