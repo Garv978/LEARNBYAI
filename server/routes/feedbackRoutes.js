@@ -3,31 +3,25 @@ const router = express.Router();
 const Feedback = require("../models/Feedback");
 
 const validateRequest = require("../middleware/validate");
-const sanitizeText = require("../utils");
 const {
-  createFeedbackSchema,
+  feedbackSchema,
   mongoIdSchema,
 } = require("../schemas/feedbackSchema");
 
 // POST: Create new feedback
 router.post(
   "/feedback",
-  validateRequest(createFeedbackSchema),
+  validateRequest(feedbackSchema),
   async (req, res) => {
     try {
-      const firstName = sanitizeText(req.body.firstName);
-      const lastName = sanitizeText(req.body.lastName);
-      const email = req.body.email;
-      const message = sanitizeText(req.body.message);
+      const { firstName, lastName, email, message } = req.body;
 
-      const feedback = new Feedback({
+      const feedback = await Feedback.create({
         firstName,
         lastName,
         email,
         message,
       });
-
-      await feedback.save();
 
       res.status(201).json({
         success: true,
@@ -48,9 +42,16 @@ router.post(
 router.get("/feedback", async (req, res) => {
   try {
     const feedbacks = await Feedback.find().sort({ createdAt: -1 });
-    res.json({ success: true, data: feedbacks });
+
+    res.json({
+      success: true,
+      data: feedbacks,
+    });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
   }
 });
 
@@ -79,7 +80,7 @@ router.get(
         error: error.message,
       });
     }
-  },
+  }
 );
 
 // DELETE: Remove feedback
@@ -107,7 +108,7 @@ router.delete(
         error: error.message,
       });
     }
-  },
+  }
 );
 
 module.exports = router;

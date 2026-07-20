@@ -43,15 +43,26 @@ UserSchema.pre("save", async function () {
   if (!this.password || !this.isModified("password")) return;
 
   const peppered = this.password + process.env.PASSWORD_PEPPER;
-  const salt = await bcrypt.genSalt(12);
-  this.password = await bcrypt.hash(peppered, salt);
+  const cost = Number(process.env.BCRYPT_COST);
+  this.password = await bcrypt.hash(peppered, cost);
 });
 
 // Compare password
 UserSchema.methods.comparePassword = async function (candidatePassword) {
   if (!this.password) return false;
-  const candidatePepperedPassword= candidatePassword +  process.env.PASSWORD_PEPPER;
-  return await bcrypt.compare(candidatePepperedPassword, this.password);
+  const peppered = candidatePassword + process.env.PASSWORD_PEPPER;
+  const isMatch = await bcrypt.compare(peppered, this.password);
+  if (!isMatch) return false;
+  // Read current cost from bcrypt hash
+  const currentCost = Number(this.password.split("$")[2]);
+  const desiredCost = Number(process.env.BCRYPT_COST);
+  // Upgrade hash if cost increased
+  if (currentCost < desiredCost) {
+    const salt = await bcrypt.genSalt(desiredCost);
+    this.password = await bcrypt.hash(peppered, salt);
+    await this.save();
+  }
+  return true;
 };
 
 // Verification token

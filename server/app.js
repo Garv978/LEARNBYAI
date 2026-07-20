@@ -2,7 +2,7 @@ require('dotenv').config();
 
 const express = require('express');
 const app = express();
-const mongoSanitize = require("express-mongo-sanitize");
+
 const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
 const helmet = require('helmet');
@@ -32,7 +32,6 @@ app.use(cors({
 }));
 
 app.use(express.json());
-app.use(mongoSanitize());
 app.use(cookieParser(process.env.JWT_SECRET));
 
 app.use('/api/v1/auth', authRouter);

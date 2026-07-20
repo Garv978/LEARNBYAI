@@ -1,4 +1,4 @@
-import { Menu, X } from "react-icons/fa"; // switched to react-icons for consistency
+import { FaBars, FaTimes } from "react-icons/fa";
 import { NavLink, useParams } from "react-router-dom";
 
 import { useState } from "react";
@@ -42,7 +42,7 @@ const PdfNavbar = () => {
         <span className="font-semibold text-white">PDF Workspace</span>
 
         <button onClick={() => setOpen(!open)} className="text-white">
-          {open ? <X size={22} /> : <Menu size={22} />}
+          {open ? <FaTimes size={22} /> : <FaBars size={22} />}
         </button>
       </div>
 
