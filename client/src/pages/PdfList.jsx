@@ -112,6 +112,8 @@ const PdfList = () => {
     }
   };
 
+
+
 useEffect(() => {
   const processing = pdfs.some(
     (pdf) =>
@@ -123,25 +125,8 @@ useEffect(() => {
 
   const interval = setInterval(async () => {
     try {
-      const updated = await Promise.all(
-        pdfs.map(async (pdf) => {
-          if (
-            pdf.processingStatus === "completed" ||
-            pdf.processingStatus === "failed"
-          ) {
-            return pdf;
-          }
-
-          const { data } = await getPdfStatus(pdf._id);
-
-          return {
-            ...pdf,
-            processingStatus: data.status,
-          };
-        })
-      );
-
-      setPdfs(updated);
+      const { data } = await getAllPdfs();
+      setPdfs(data.pdfs);
     } catch (err) {
       console.error(err);
     }
