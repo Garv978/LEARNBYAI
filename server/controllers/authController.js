@@ -11,7 +11,7 @@ const crypto = require("crypto");
 const { sendEmail } = require("../utils");
 const Token = require("../models/Token");
 
-const origin = process.env.FRONTEND_URL || "http://localhost:5173";
+const origin = process.env.CLIENT_URL || "http://localhost:5173";
 
 const register = async (req, res) => {
   try {
