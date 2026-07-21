@@ -1,6 +1,6 @@
 const z = require("zod");
 
-const passwordSchema = z.string().min(8).max(72);
+const passwordSchema = z.string().min(8).max(255);
 
 const emailSchema = z
   .string()

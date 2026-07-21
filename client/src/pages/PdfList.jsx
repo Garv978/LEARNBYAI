@@ -106,39 +106,58 @@ const PdfList = () => {
   const fetchPdfs = async () => {
     try {
       const { data } = await getAllPdfs();
-      setPdfs(data);
+      setPdfs(data.pdfs);
     } catch (err) {
       console.error(err);
     }
   };
 
-  useEffect(() => {
-    fetchPdfs();
-  }, []);
+useEffect(() => {
+  const processing = pdfs.some(
+    (pdf) =>
+      pdf.processingStatus !== "completed" &&
+      pdf.processingStatus !== "failed"
+  );
 
-  useEffect(() => {
-    const interval = setInterval(async () => {
-      try {
-        setPdfs((prev) =>
-          Promise.all(
-            prev.map(async (pdf) => {
-              const { data } = await getPdfStatus(pdf._id);
-              return { ...pdf, processingStatus: data.status };
-            })
-          )
-        );
-      } catch (err) {
-        console.error(err);
-      }
-    }, 5000);
+  if (!processing) return;
 
-    return () => clearInterval(interval);
-  }, []);
+  const interval = setInterval(async () => {
+    try {
+      const updated = await Promise.all(
+        pdfs.map(async (pdf) => {
+          if (
+            pdf.processingStatus === "completed" ||
+            pdf.processingStatus === "failed"
+          ) {
+            return pdf;
+          }
+
+          const { data } = await getPdfStatus(pdf._id);
+
+          return {
+            ...pdf,
+            processingStatus: data.status,
+          };
+        })
+      );
+
+      setPdfs(updated);
+    } catch (err) {
+      console.error(err);
+    }
+  }, 5000);
+
+  return () => clearInterval(interval);
+}, [pdfs]);
+
+useEffect(() => {
+  fetchPdfs();
+}, []);
 
   const handleUpload = async (file) => {
     try {
       const { data } = await uploadPdf(file);
-      setPdfs((prev) => [data, ...prev]);
+      setPdfs((prev) => [data.pdf, ...prev]);
     } catch (err) {
       console.error(err);
     }

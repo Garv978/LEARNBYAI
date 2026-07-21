@@ -4,7 +4,7 @@ const axios = require("axios");
 
 const connection = require("../config/redis");
 const Pdf = require("../models/Pdf");
-
+const pdfQueue = require("../queues/pdfQueue");
 const {
   parsePdfBuffer,
   splitTextIntoChunks,
@@ -13,110 +13,107 @@ const {
   upsertVectors,
 } = require("../services");
 
-const worker = new Worker(
-  "pdf-processing",
+const connectDB = require("../db/connect");
 
-  async (job) => {
-    console.log("📄 Processing PDF:", job.data.pdfId);
+(async () => {
+  // Connect to MongoDB once
+  await connectDB(process.env.MONGO_URI);
+  console.log("✅ Worker connected to MongoDB");
+  await pdfQueue.drain();
+  await pdfQueue.clean(0, 1000, "failed");
+  await pdfQueue.clean(0, 1000, "completed");
+  // Create worker
+  const worker = new Worker(
+    "pdf-processing",
+    async (job) => {
+      console.log("📄 Processing PDF:", job.data.pdfId);
 
-    const pdf = await Pdf.findById(job.data.pdfId);
+      const pdf = await Pdf.findById(job.data.pdfId);
+      if (!pdf) throw new Error("PDF not found");
 
-    if (!pdf) {
-      throw new Error("PDF not found");
-    }
+      await pdf.markProcessing();
 
-    await pdf.markProcessing();
+      try {
+        // -----------------------------
+        // Download PDF
+        // -----------------------------
+        const response = await axios.get(pdf.fileUrl, {
+          responseType: "arraybuffer",
+        });
+        const buffer = Buffer.from(response.data);
 
-    try {
-      // -----------------------------
-      // Download PDF
-      // -----------------------------
-      const response = await axios.get(pdf.fileUrl, {
-        responseType: "arraybuffer",
-      });
+        // -----------------------------
+        // Parse PDF
+        // -----------------------------
+        const parsed = await parsePdfBuffer(buffer);
+        if (!parsed.text.trim()) throw new Error("No text found in PDF");
 
-      const buffer = Buffer.from(response.data);
+        pdf.pages = parsed.pages;
 
-      // -----------------------------
-      // Parse PDF
-      // -----------------------------
-      const parsed = await parsePdfBuffer(buffer);
+        // -----------------------------
+        // Clean Text
+        // -----------------------------
+        const cleanText = parsed.text
+          .normalize("NFKC")
+          .replace(/\r/g, "")
+          .replace(/\t/g, " ")
+          .replace(/-\n/g, "")
+          .replace(/(?<![.!?:])\n(?!\n)/g, " ")
+          .replace(/\n{3,}/g, "\n\n")
+          .replace(/[ ]{2,}/g, " ")
+          .trim();
 
-      if (!parsed.text.trim()) {
-        throw new Error("No text found in PDF");
+        // -----------------------------
+        // Chunk Text
+        // -----------------------------
+        const chunks = await splitTextIntoChunks(cleanText);
+
+        // -----------------------------
+        // Pinecone Index
+        // -----------------------------
+        const index = await getIndex();
+        const vectors = await Promise.all(
+          chunks.map(async (chunk, i) => {
+            const embedding = await createEmbedding(chunk);
+            return {
+              id: `${pdf._id}_${i}`,
+              values: embedding,
+              metadata: {
+                pdfId: pdf._id.toString(),
+                title: pdf.title,
+                chunkIndex: i,
+                text: chunk,
+              },
+            };
+          }),
+        );
+
+        await upsertVectors(index,vectors)
+        // -----------------------------
+        // Finish
+        // -----------------------------
+        await pdf.markCompleted(cleanText);
+        console.log(`✅ ${pdf.title} processed successfully`);
+      } catch (error) {
+        await pdf.markFailed(error.message);
+        console.error("❌ Error processing PDF:", error.message);
+        throw error;
       }
+    },
+    {
+      connection,
+      concurrency: 2,
+    },
+  );
 
-      pdf.pages = parsed.pages;
+  worker.on("completed", (job) => {
+    console.log(`✅ Job ${job.id} completed`);
+  });
 
-      // -----------------------------
-      // Clean Text
-      // -----------------------------
-      const cleanText = parsed.text
-        .normalize("NFKC")
-        .replace(/\r/g, "")
-        .replace(/\t/g, " ")
-        .replace(/-\n/g, "")
-        .replace(/(?<![.!?:])\n(?!\n)/g, " ")
-        .replace(/\n{3,}/g, "\n\n")
-        .replace(/[ ]{2,}/g, " ")
-        .trim();
+  worker.on("failed", (job, err) => {
+    console.log(`❌ Job ${job?.id} failed`);
+    console.error(err.message);
+  });
 
-      // -----------------------------
-      // Chunk Text
-      // -----------------------------
-      const chunks = await splitTextIntoChunks(cleanText);
-
-      console.log(`Created ${chunks.length} chunks`);
-
-      // -----------------------------
-      // Pinecone Index
-      // -----------------------------
-      const index = getIndex();
-
-      const vectors = await Promise.all(
-        chunks.map(async (chunk, i) => {
-          const embedding = await createEmbedding(chunk);
-
-          return {
-            id: `${pdf._id}_${i}`,
-            values: embedding,
-            metadata: {
-              pdfId: pdf._id.toString(),
-              title: pdf.title,
-              chunkIndex: i,
-              text: chunk,
-            },
-          };
-        }),
-      );
-
-      await upsertVectors(index, vectors);
-
-      // -----------------------------
-      // Finish
-      // -----------------------------
-      await pdf.markCompleted(cleanText);
-
-      console.log(`✅ ${pdf.title} processed successfully`);
-    } catch (error) {
-      await pdf.markFailed(error.message);
-      throw error;
-    }
-  },
-
-  {
-    connection,
-    concurrency: 2,
-  },
-);
-
-worker.on("completed", (job) => {
-  console.log(`✅ Job ${job.id} completed`);
-});
-
-worker.on("failed", (job, err) => {
-  console.log(`❌ Job ${job?.id} failed`);
-  console.log(err.message);
-});
-
-console.log("🚀 PDF Worker Started");
+  console.log("🚀 PDF Worker Started");
+})();

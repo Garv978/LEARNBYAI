@@ -20,7 +20,7 @@ const UserSchema = new mongoose.Schema({
     type: String,
     required: true,
     minlength: 6,
-    maxlength: 72,
+    maxlength: 255,
   },
   role: {
     type: String,
@@ -43,27 +43,46 @@ UserSchema.pre("save", async function () {
   if (!this.password || !this.isModified("password")) return;
 
   const peppered = this.password + process.env.PASSWORD_PEPPER;
-  const cost = Number(process.env.ARGON2_COST);
-  this.password = await argon2.hash(peppered, cost);
+
+  this.password = await argon2.hash(peppered, {
+    type: argon2.argon2id,
+    timeCost: Number(process.env.ARGON2_TIME_COST || 3),
+    memoryCost: Number(process.env.ARGON2_MEMORY_COST || 65536),
+    parallelism: Number(process.env.ARGON2_PARALLELISM || 1),
+  });
 });
 
 // Compare password
 UserSchema.methods.comparePassword = async function (candidatePassword) {
   if (!this.password) return false;
+
   const peppered = candidatePassword + process.env.PASSWORD_PEPPER;
-  const isMatch = await argon2.compare(peppered, this.password);
-  if (!isMatch) return false;
-  // Read current cost from argon2 hash
-  const currentCost = Number(this.password.split("$")[2]);
-  const desiredCost = Number(process.env.ARGON2_COST);
-  // Upgrade hash if cost increased
-  if (currentCost < desiredCost) {
-    const salt = await argon2.genSalt(desiredCost);
-    this.password = await argon2.hash(peppered, salt);
+
+  const isMatch = await argon2.verify(this.password, peppered);
+
+  // Rehash automatically if stronger parameters are configured
+  if (
+    isMatch &&
+    await argon2.needsRehash(this.password, {
+      type: argon2.argon2id,
+      timeCost: Number(process.env.ARGON2_TIME_COST || 3),
+      memoryCost: Number(process.env.ARGON2_MEMORY_COST || 65536),
+      parallelism: Number(process.env.ARGON2_PARALLELISM || 1),
+    })
+  ) {
+    this.password = await argon2.hash(peppered, {
+      type: argon2.argon2id,
+      timeCost: Number(process.env.ARGON2_TIME_COST || 3),
+      memoryCost: Number(process.env.ARGON2_MEMORY_COST || 65536),
+      parallelism: Number(process.env.ARGON2_PARALLELISM || 1),
+    });
+
     await this.save();
   }
-  return true;
+
+  return isMatch;
 };
+
 
 // Verification token
 UserSchema.methods.createVerificationToken = function () {

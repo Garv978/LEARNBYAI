@@ -1,18 +1,25 @@
-const pdfParse = require("pdf-parse");
+const { PDFParse } = require("pdf-parse");
 
 async function parsePdfBuffer(buffer) {
+  let parser;
+
   try {
-    const parsed = await pdfParse(buffer);
+    parser = new PDFParse({ data: buffer });
+
+    const parsed = await parser.getText();
 
     return {
-      pages: parsed.numpages,
+      pages: parsed.total,
       text: parsed.text,
       info: parsed.info,
       metadata: parsed.metadata,
-      version: parsed.version,
     };
   } catch (err) {
     throw new Error(`Failed to parse PDF: ${err.message}`);
+  } finally {
+    if (parser) {
+      await parser.destroy();
+    }
   }
 }
 
