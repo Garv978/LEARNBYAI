@@ -4,14 +4,14 @@ const Feedback = require("../models/Feedback");
 
 const validateRequest = require("../middleware/validate");
 const {
-  feedbackSchema,
+  createFeedbackSchema,
   mongoIdSchema,
 } = require("../schemas/feedbackSchema");
 
 // POST: Create new feedback
 router.post(
   "/feedback",
-  validateRequest(feedbackSchema),
+  validateRequest(createFeedbackSchema),
   async (req, res) => {
     try {
       const { firstName, lastName, email, message } = req.body;

@@ -11,8 +11,6 @@ const cors = require('cors');
 // database
 const connectDB = require('./db/connect');
 
-
-
 //  routers
 const authRouter = require('./routes/authRoutes');
 const userRouter = require('./routes/userRoutes');
