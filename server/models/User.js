@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const bcrypt = require("bcryptjs");
+const argon2 = require("argon2");
 const crypto = require("crypto");
 
 const UserSchema = new mongoose.Schema({
@@ -43,23 +43,23 @@ UserSchema.pre("save", async function () {
   if (!this.password || !this.isModified("password")) return;
 
   const peppered = this.password + process.env.PASSWORD_PEPPER;
-  const cost = Number(process.env.BCRYPT_COST);
-  this.password = await bcrypt.hash(peppered, cost);
+  const cost = Number(process.env.ARGON2_COST);
+  this.password = await argon2.hash(peppered, cost);
 });
 
 // Compare password
 UserSchema.methods.comparePassword = async function (candidatePassword) {
   if (!this.password) return false;
   const peppered = candidatePassword + process.env.PASSWORD_PEPPER;
-  const isMatch = await bcrypt.compare(peppered, this.password);
+  const isMatch = await argon2.compare(peppered, this.password);
   if (!isMatch) return false;
-  // Read current cost from bcrypt hash
+  // Read current cost from argon2 hash
   const currentCost = Number(this.password.split("$")[2]);
-  const desiredCost = Number(process.env.BCRYPT_COST);
+  const desiredCost = Number(process.env.ARGON2_COST);
   // Upgrade hash if cost increased
   if (currentCost < desiredCost) {
-    const salt = await bcrypt.genSalt(desiredCost);
-    this.password = await bcrypt.hash(peppered, salt);
+    const salt = await argon2.genSalt(desiredCost);
+    this.password = await argon2.hash(peppered, salt);
     await this.save();
   }
   return true;
