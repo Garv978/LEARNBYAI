@@ -5,6 +5,7 @@ const PdfLayout = () => {
   return (
     <div className="flex flex-col h-full">
 
+
       {/* PDF Navigation */}
       <PdfNavbar />
 
