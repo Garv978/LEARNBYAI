@@ -12,6 +12,7 @@ const Register = () => {
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
   const [strength, setStrength] = useState(null);
+
   const { register } = useAuth();
 
   const handleSubmit = async (e) => {
@@ -32,7 +33,6 @@ const Register = () => {
       }
     } catch (err) {
       console.error("Register error:", err);
-
       setError(
         err.response?.data?.message ||
           err.response?.data?.msg ||
@@ -48,9 +48,9 @@ const Register = () => {
     <div className="flex items-center justify-center min-h-screen bg-gray-50">
       <form
         onSubmit={handleSubmit}
-        className="max-w-96 w-full text-center border border-gray-300/60 rounded-2xl px-8 bg-white"
+        className="max-w-md w-full text-center border border-gray-300 rounded-2xl px-8 py-6 bg-white shadow-lg"
       >
-        <h1 className="text-gray-900 text-3xl mt-10 font-medium">Sign up</h1>
+        <h1 className="text-gray-900 text-3xl font-semibold">Sign up</h1>
         <p className="text-gray-500 text-sm mt-2">
           Please create an account to continue
         </p>
@@ -60,109 +60,84 @@ const Register = () => {
           <div className="text-green-600 text-sm mt-2">{success}</div>
         )}
 
-        <div className="flex items-center w-full mt-10 bg-white border border-gray-300/80 h-12 rounded-full overflow-hidden pl-6 gap-2">
-          {/* Name icon */}
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            fill="none"
-            stroke="currentColor"
-            className="text-gray-400"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <circle cx="12" cy="8" r="5" /> <path d="M20 21a8 8 0 0 0-16 0" />
-          </svg>
+        {/* Name */}
+        <div className="flex items-center w-full mt-6 border border-gray-300 h-12 rounded-full pl-6 gap-2">
           <input
             type="text"
             placeholder="Name"
-            className="bg-transparent text-gray-500 placeholder-gray-500 outline-none text-sm w-full h-full"
+            className="bg-transparent text-gray-700 placeholder-gray-400 outline-none text-sm w-full h-full"
             value={name}
             onChange={(e) => {
               const value = e.target.value;
               setName(value);
-
-              if (password) {
-                setStrength(checkPasswordStrength(password, [value, email]));
-              }
+              const emailParts = email
+                .toLowerCase()
+                .split(/[@._-]+/)
+                .filter(Boolean);
+              if (password)
+                setStrength(
+                  checkPasswordStrength(password, [
+                    value,
+                    email,
+                    ...emailParts,
+                  ]),
+                );
             }}
             required
           />
         </div>
 
-        <div className="flex items-center mt-4 w-full bg-white border border-gray-300/80 h-12 rounded-full overflow-hidden pl-6 gap-2">
-          {/* Email icon */}
-          <svg
-            width="16"
-            height="11"
-            viewBox="0 0 16 11"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              fillRule="evenodd"
-              clipRule="evenodd"
-              d="M0 .55.571 0H15.43l.57.55v9.9l-.571.55H.57L0 10.45zm1.143 1.138V9.9h13.714V1.69l-6.503 4.8h-.697zM13.749 1.1H2.25L8 5.356z"
-              fill="#6B7280"
-            />
-          </svg>
+        {/* Email */}
+        <div className="flex items-center mt-4 w-full border border-gray-300 h-12 rounded-full pl-6 gap-2">
           <input
             type="email"
             placeholder="Email id"
-            className="bg-transparent text-gray-500 placeholder-gray-500 outline-none text-sm w-full h-full"
+            className="bg-transparent text-gray-700 placeholder-gray-400 outline-none text-sm w-full h-full"
             value={email}
             onChange={(e) => {
               const value = e.target.value;
               setEmail(value);
-
-              if (password) {
-                setStrength(checkPasswordStrength(password, [name, value]));
-              }
+              const emailParts = value
+                .toLowerCase()
+                .split(/[@._-]+/)
+                .filter(Boolean);
+              if (password)
+                setStrength(
+                  checkPasswordStrength(password, [name, value, ...emailParts]),
+                );
             }}
             required
           />
         </div>
 
-        <div className="flex items-center mt-4 w-full bg-white border border-gray-300/80 h-12 rounded-full overflow-hidden pl-6 gap-2">
-          {/* Password icon */}
-          <svg
-            width="13"
-            height="17"
-            viewBox="0 0 13 17"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M13 8.5c0-.938-.729-1.7-1.625-1.7h-.812V4.25C10.563 1.907 8.74 0 6.5 0S2.438 1.907 2.438 4.25V6.8h-.813C.729 6.8 0 7.562 0 8.5v6.8c0 .938.729 1.7 1.625 1.7h9.75c.896 0 1.625-.762 1.625-1.7zM4.063 4.25c0-1.406 1.093-2.55 2.437-2.55s2.438 1.144 2.438 2.55V6.8H4.061z"
-              fill="#6B7280"
+        {/* Password */}
+        <div className="flex flex-col mt-4 w-full">
+          <div className="flex items-center border border-gray-300 h-12 rounded-full pl-6 gap-2">
+            <input
+              type="password"
+              placeholder="Password"
+              className="bg-transparent text-gray-700 placeholder-gray-400 outline-none text-sm w-full h-full"
+              value={password}
+              onChange={(e) => {
+                const value = e.target.value;
+                setPassword(value);
+                const emailParts = email
+                  .toLowerCase()
+                  .split(/[@._-]+/)
+                  .filter(Boolean);
+                setStrength(
+                  value ? checkPasswordStrength(value, [name, email,...emailParts]) : null,
+                );
+              }}
+              required
             />
-          </svg>
-          <input
-            type="password"
-            placeholder="Password"
-            className="bg-transparent text-gray-500 placeholder-gray-500 outline-none text-sm w-full h-full"
-            value={password}
-            onChange={(e) => {
-              const value = e.target.value;
-              setPassword(value);
+          </div>
 
-              if (value) {
-                const result = checkPasswordStrength(value, [name, email]);
-                setStrength(result);
-              } else {
-                setStrength(null);
-              }
-            }}
-            required
-          />
+          {/* Strength meter */}
           {strength && (
             <div className="mt-3">
-              {/* Strength label */}
               <div className="flex justify-between text-xs mb-1">
                 <span>Password Strength</span>
-
                 <span
                   className={
                     strength.score === 0
@@ -184,7 +159,6 @@ const Register = () => {
                 </span>
               </div>
 
-              {/* Progress bar */}
               <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                 <div
                   className={`h-full transition-all duration-300 ${
@@ -201,18 +175,16 @@ const Register = () => {
                 />
               </div>
 
-              {/* Warning */}
-              {strength.feedback.warning && (
+              {strength.feedback?.warning && (
                 <p className="text-red-500 text-xs mt-2">
                   {strength.feedback.warning}
                 </p>
               )}
 
-              {/* Suggestions */}
-              {strength.feedback.suggestions.length > 0 && (
+              {strength.feedback?.suggestions?.length > 0 && (
                 <ul className="mt-2 text-xs text-gray-600 list-disc list-inside space-y-1">
-                  {strength.feedback.suggestions.map((suggestion) => (
-                    <li key={suggestion}>{suggestion}</li>
+                  {strength.feedback.suggestions.map((s) => (
+                    <li key={s}>{s}</li>
                   ))}
                 </ul>
               )}
@@ -220,17 +192,18 @@ const Register = () => {
           )}
         </div>
 
+        {/* Submit */}
         <button
           type="submit"
           disabled={loading || (strength && strength.score < 3)}
-          className="mt-6 w-full h-11 rounded-full text-white bg-indigo-500 hover:opacity-90 transition-opacity disabled:opacity-50"
+          className="mt-6 w-full h-11 rounded-full text-white bg-indigo-500 hover:bg-indigo-600 transition disabled:opacity-50"
         >
           {loading ? "Creating..." : "Sign up"}
         </button>
 
-        <p className="text-gray-500 text-sm mt-3 mb-11">
+        <p className="text-gray-500 text-sm mt-3">
           Already have an account?{" "}
-          <Link to="/login" className="text-indigo-500">
+          <Link to="/login" className="text-indigo-500 hover:underline">
             Login
           </Link>
         </p>

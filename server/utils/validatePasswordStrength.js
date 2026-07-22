@@ -1,9 +1,8 @@
-const { zxcvbn, zxcvbnOptions } = require("@zxcvbn-ts/core");
+const { ZxcvbnFactory } = require("@zxcvbn-ts/core");
 const common = require("@zxcvbn-ts/language-common");
 const english = require("@zxcvbn-ts/language-en");
 
-// Configure once
-zxcvbnOptions.setOptions({
+const zxcvbn = new ZxcvbnFactory({
   dictionary: {
     ...common.dictionary,
     ...english.dictionary,
@@ -13,7 +12,7 @@ zxcvbnOptions.setOptions({
 });
 
 const validatePasswordStrength = (password, userInputs = []) => {
-  const result = zxcvbn(password, userInputs);
+  const result = zxcvbn.check(password, userInputs);
 
   return {
     isStrong: result.score >= 3,
