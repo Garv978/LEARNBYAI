@@ -11,10 +11,11 @@ const TokenSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+    loggedOutAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true },
 );
 module.exports = mongoose.model("Token", TokenSchema);
-
-
-

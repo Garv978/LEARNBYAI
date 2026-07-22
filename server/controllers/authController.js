@@ -235,22 +235,33 @@ const login = async (req, res) => {
 
 const logout = async (req, res) => {
   try {
-    await Token.findOneAndDelete({ user: req.user.userId });
-    res.cookie("accessToken", "logout", {
+    await Token.updateMany(
+      { user: req.user.userId, isValid: true },
+      {
+        isValid: false,
+        loggedOutAt: new Date(),
+      },
+    );
+
+    const cookieOptions = {
       httpOnly: true,
-      expires: new Date(Date.now()),
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
+      expires: new Date(0),
+    };
+
+    res.cookie("accessToken", "", cookieOptions);
+    res.cookie("refreshToken", "", cookieOptions);
+
+    res.status(StatusCodes.OK).json({
+      success: true,
+      message: "User logged out successfully",
     });
-    res.cookie("refreshToken", "logout", {
-      httpOnly: true,
-      expires: new Date(Date.now()),
-    });
-    res
-      .status(StatusCodes.OK)
-      .json({ success: true, message: "User logged out" });
   } catch (err) {
-    res
-      .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ success: false, message: err.message || "Server error" });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: err.message || "Server error",
+    });
   }
 };
 
@@ -327,7 +338,13 @@ const resetPassword = async (req, res) => {
     user.passwordToken = null;
     user.passwordTokenExpirationDate = null;
     await user.save();
-
+    await Token.updateMany(
+      { user: req.user.userId, isValid: true },
+      {
+        isValid: false,
+        loggedOutAt: new Date(),
+      },
+    );
     res
       .status(StatusCodes.OK)
       .json({ success: true, message: "Password reset successful" });
