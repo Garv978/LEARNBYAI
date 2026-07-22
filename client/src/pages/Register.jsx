@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 
 import { Link } from "react-router-dom";
+import { checkPasswordStrength } from "../utils/zxcvbn";
 import { useAuth } from "../context/AuthContext";
 
 const Register = () => {
@@ -10,7 +11,7 @@ const Register = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
-
+  const [strength, setStrength] = useState(null);
   const { register } = useAuth();
 
   const handleSubmit = async (e) => {
@@ -79,7 +80,14 @@ const Register = () => {
             placeholder="Name"
             className="bg-transparent text-gray-500 placeholder-gray-500 outline-none text-sm w-full h-full"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value;
+              setName(value);
+
+              if (password) {
+                setStrength(checkPasswordStrength(password, [value, email]));
+              }
+            }}
             required
           />
         </div>
@@ -105,7 +113,14 @@ const Register = () => {
             placeholder="Email id"
             className="bg-transparent text-gray-500 placeholder-gray-500 outline-none text-sm w-full h-full"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value;
+              setEmail(value);
+
+              if (password) {
+                setStrength(checkPasswordStrength(password, [name, value]));
+              }
+            }}
             required
           />
         </div>
@@ -129,14 +144,85 @@ const Register = () => {
             placeholder="Password"
             className="bg-transparent text-gray-500 placeholder-gray-500 outline-none text-sm w-full h-full"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value;
+              setPassword(value);
+
+              if (value) {
+                const result = checkPasswordStrength(value, [name, email]);
+                setStrength(result);
+              } else {
+                setStrength(null);
+              }
+            }}
             required
           />
+          {strength && (
+            <div className="mt-3">
+              {/* Strength label */}
+              <div className="flex justify-between text-xs mb-1">
+                <span>Password Strength</span>
+
+                <span
+                  className={
+                    strength.score === 0
+                      ? "text-red-600"
+                      : strength.score === 1
+                        ? "text-orange-500"
+                        : strength.score === 2
+                          ? "text-yellow-500"
+                          : strength.score === 3
+                            ? "text-blue-600"
+                            : "text-green-600"
+                  }
+                >
+                  {
+                    ["Very Weak", "Weak", "Fair", "Strong", "Very Strong"][
+                      strength.score
+                    ]
+                  }
+                </span>
+              </div>
+
+              {/* Progress bar */}
+              <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className={`h-full transition-all duration-300 ${
+                    strength.score === 0
+                      ? "w-1/5 bg-red-600"
+                      : strength.score === 1
+                        ? "w-2/5 bg-orange-500"
+                        : strength.score === 2
+                          ? "w-3/5 bg-yellow-500"
+                          : strength.score === 3
+                            ? "w-4/5 bg-blue-600"
+                            : "w-full bg-green-600"
+                  }`}
+                />
+              </div>
+
+              {/* Warning */}
+              {strength.feedback.warning && (
+                <p className="text-red-500 text-xs mt-2">
+                  {strength.feedback.warning}
+                </p>
+              )}
+
+              {/* Suggestions */}
+              {strength.feedback.suggestions.length > 0 && (
+                <ul className="mt-2 text-xs text-gray-600 list-disc list-inside space-y-1">
+                  {strength.feedback.suggestions.map((suggestion) => (
+                    <li key={suggestion}>{suggestion}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
         </div>
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || (strength && strength.score < 3)}
           className="mt-6 w-full h-11 rounded-full text-white bg-indigo-500 hover:opacity-90 transition-opacity disabled:opacity-50"
         >
           {loading ? "Creating..." : "Sign up"}

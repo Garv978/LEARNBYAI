@@ -1,4 +1,5 @@
 import "./App.css";
+import "./utils/zxcvbn";
 
 import { Route, Routes } from "react-router-dom";
 

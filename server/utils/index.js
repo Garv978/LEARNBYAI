@@ -3,6 +3,7 @@ const createTokenUser = require('./createTokenUser');
 const checkPermissions = require('./checkPermissions');
 const sendEmail = require('./sendEmail')
 const sanitizeText = require('./sanitize')
+const validatePasswordStrength = require('./validatePasswordStrength')
 module.exports = {
   createJWT,
   isTokenValid,
@@ -11,4 +12,5 @@ module.exports = {
   checkPermissions,
   sendEmail,
   sanitizeText,
+  validatePasswordStrength,
 };

@@ -6,6 +6,7 @@ const {
   createTokenUser,
   isTokenValid,
   createJWT,
+  validatePasswordStrength,
 } = require("../utils");
 const crypto = require("crypto");
 const { sendEmail } = require("../utils");
@@ -22,7 +23,18 @@ const register = async (req, res) => {
         .status(StatusCodes.BAD_REQUEST)
         .json({ success: false, message: "All fields are required" });
     }
+    const strength = validatePasswordStrength(password, [name, email]);
 
+    if (!strength.isStrong) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        score: strength.score,
+        message:
+          strength.feedback.warning ||
+          strength.feedback.suggestions.join(" ") ||
+          "Password is too weak.",
+      });
+    }
     const emailAlreadyExists = await User.findOne({ email });
     if (emailAlreadyExists) {
       return res
@@ -46,13 +58,16 @@ const register = async (req, res) => {
       `,
     });
 
-    res
-      .status(StatusCodes.CREATED)
-      .json({ success: true, message: "Registration successful. Please check your email to verify your account." });
+    res.status(StatusCodes.CREATED).json({
+      success: true,
+      message:
+        "Registration successful. Please check your email to verify your account.",
+    });
   } catch (err) {
-    res
-      .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ success: false, message: err.message || "Server error" });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Something went wrong with your Registration" || "Server error",
+    });
   }
 };
 
@@ -76,10 +91,12 @@ const verifyEmail = async (req, res) => {
     user.isVerified = true;
     user.verified = new Date();
     user.verificationToken = null;
-    user.verificationTokenExpiry= null;
+    user.verificationTokenExpiry = null;
     await user.save();
 
-    res.status(StatusCodes.OK).json({ success: true, message: "Email verified successfully" });
+    res
+      .status(StatusCodes.OK)
+      .json({ success: true, message: "Email verified successfully" });
   } catch (err) {
     res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
@@ -87,14 +104,13 @@ const verifyEmail = async (req, res) => {
   }
 };
 
-
 const resendVerifyEmail = async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
-        message: "Email is required"
+        message: "Email is required",
       });
     }
 
@@ -102,22 +118,25 @@ const resendVerifyEmail = async (req, res) => {
     if (!user) {
       return res.status(StatusCodes.NOT_FOUND).json({
         success: false,
-        message: "User not registered"
+        message: "User not registered",
       });
     }
 
     if (user.isVerified) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
-        message: "User is already verified"
+        message: "User is already verified",
       });
     }
 
     // Cooldown check: block if token still valid
-    if (user.verificationTokenExpiry && user.verificationTokenExpiry > Date.now()) {
+    if (
+      user.verificationTokenExpiry &&
+      user.verificationTokenExpiry > Date.now()
+    ) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
-        message: "Please wait before requesting another email"
+        message: "Please wait before requesting another email",
       });
     }
 
@@ -139,16 +158,15 @@ const resendVerifyEmail = async (req, res) => {
 
     return res.status(StatusCodes.OK).json({
       success: true,
-      message: "Verification email resent. Please check your inbox."
+      message: "Verification email resent. Please check your inbox.",
     });
   } catch (err) {
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
-      message: err.message || "Server error"
+      message: err.message || "Server error",
     });
   }
 };
-
 
 const login = async (req, res) => {
   try {
@@ -191,7 +209,14 @@ const login = async (req, res) => {
       }
       refreshToken = existingToken.refreshToken;
       attachCookiesToResponse({ res, user: tokenUser, refreshToken });
-      return res.status(StatusCodes.OK).json({ success: true, user: tokenUser,accessToken : createJWT({ payload: { user: tokenUser }, expiresIn: "15m" }) });
+      return res.status(StatusCodes.OK).json({
+        success: true,
+        user: tokenUser,
+        accessToken: createJWT({
+          payload: { user: tokenUser },
+          expiresIn: "15m",
+        }),
+      });
     }
 
     refreshToken = crypto.randomBytes(40).toString("hex");
@@ -219,7 +244,9 @@ const logout = async (req, res) => {
       httpOnly: true,
       expires: new Date(Date.now()),
     });
-    res.status(StatusCodes.OK).json({ success: true, message: "User logged out" });
+    res
+      .status(StatusCodes.OK)
+      .json({ success: true, message: "User logged out" });
   } catch (err) {
     res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
@@ -251,7 +278,10 @@ const forgotPassword = async (req, res) => {
       });
     }
 
-    res.status(StatusCodes.OK).json({ success: true, message: "Please check your email for resetting your password" });
+    res.status(StatusCodes.OK).json({
+      success: true,
+      message: "Please check your email for resetting your password",
+    });
   } catch (err) {
     res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
@@ -281,13 +311,26 @@ const resetPassword = async (req, res) => {
         .status(StatusCodes.UNAUTHORIZED)
         .json({ success: false, message: "Invalid or expired token" });
     }
+    const strength = validatePasswordStrength(newPassword, [user.name, email]);
 
+    if (!strength.isStrong) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        score: strength.score,
+        message:
+          strength.feedback.warning ||
+          strength.feedback.suggestions.join(" ") ||
+          "Password is too weak.",
+      });
+    }
     user.password = newPassword;
     user.passwordToken = null;
     user.passwordTokenExpirationDate = null;
     await user.save();
 
-    res.status(StatusCodes.OK).json({ success: true, message: "Password reset successful" });
+    res
+      .status(StatusCodes.OK)
+      .json({ success: true, message: "Password reset successful" });
   } catch (err) {
     res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
@@ -334,7 +377,6 @@ const refresh = async (req, res) => {
     accessToken: newAccessToken,
   });
 };
-
 
 module.exports = {
   register,
