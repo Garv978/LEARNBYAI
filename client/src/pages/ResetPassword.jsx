@@ -1,7 +1,8 @@
+import { Link, useSearchParams } from "react-router-dom";
 import React, { useState } from "react";
 
+import { checkPasswordStrength } from "../utils/zxcvbn"; // ✅ import zxcvbn wrapper
 import { resetPassword as resetPasswordAPI } from "../services/AuthServices";
-import { useSearchParams } from "react-router-dom";
 
 const ResetPassword = () => {
   const [searchParams] = useSearchParams();
@@ -9,6 +10,8 @@ const ResetPassword = () => {
   const email = searchParams.get("email");
 
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState(""); // ✅ new state
+  const [strength, setStrength] = useState(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -17,19 +20,19 @@ const ResetPassword = () => {
     e.preventDefault();
     setMessage("");
     setError("");
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const result = await resetPasswordAPI({
-        email,
-        token,
-        newPassword: password,
-      });
+      const result = await resetPasswordAPI({ email, token, newPassword: password });
       console.log(result);
       if (result.success) {
-        setMessage(
-          result.message || "Password reset successful! You can now log in.",
-        );
+        setMessage(result.message || "Password reset successful! You can now log in.");
       } else {
         setError(result.message);
       }
@@ -39,61 +42,116 @@ const ResetPassword = () => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50">
+    <div className="flex items-center justify-center min-h-screen bg-gray-50 px-4">
       <form
         onSubmit={handleSubmit}
-        className="max-w-96 w-full text-center border border-gray-300/60 rounded-2xl px-8 bg-white"
+        className="w-full max-w-md bg-white shadow-lg rounded-2xl px-8 py-10"
       >
-        <h1 className="text-gray-900 text-3xl mt-10 font-medium">
+        <h1 className="text-gray-900 text-2xl font-semibold text-center">
           Reset Password
         </h1>
-        <p className="text-gray-500 text-sm mt-2">
+        <p className="text-gray-500 text-sm text-center mt-2">
           Enter your new password below
         </p>
 
-        {error && <div className="text-red-500 text-sm mt-2">{error}</div>}
-        {message && (
-          <div className="text-green-600 text-sm mt-2">{message}</div>
-        )}
+        {error && <div className="text-red-500 text-sm mt-4 text-center">{error}</div>}
+        {message && <div className="text-green-600 text-sm mt-4 text-center">{message}</div>}
 
-        <div className="flex items-center w-full mt-10 bg-white border border-gray-300/80 h-12 rounded-full overflow-hidden pl-6 gap-2">
-          {/* Password icon */}
-          <svg
-            width="13"
-            height="17"
-            viewBox="0 0 13 17"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M13 8.5c0-.938-.729-1.7-1.625-1.7h-.812V4.25C10.563 1.907 8.74 0 6.5 0S2.438 1.907 2.438 4.25V6.8h-.813C.729 6.8 0 7.562 0 8.5v6.8c0 .938.729 1.7 1.625 1.7h9.75c.896 0 1.625-.762 1.625-1.7zM4.063 4.25c0-1.406 1.093-2.55 2.437-2.55s2.438 1.144 2.438 2.55V6.8H4.061z"
-              fill="#6B7280"
-            />
-          </svg>
+        {/* New password */}
+        <div className="flex items-center w-full mt-8 border border-gray-300 rounded-lg overflow-hidden px-4 h-12">
           <input
             type="password"
             placeholder="New password"
-            className="bg-transparent text-gray-500 placeholder-gray-500 outline-none text-sm w-full h-full"
+            className="bg-transparent text-gray-700 placeholder-gray-400 outline-none text-sm w-full h-full"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value;
+              setPassword(value);
+              const emailParts = email?.toLowerCase().split(/[@._-]+/).filter(Boolean) || [];
+              setStrength(
+                value ? checkPasswordStrength(value, [email, ...emailParts]) : null
+              );
+            }}
+            required
+          />
+        </div>
+
+        {/* Strength meter */}
+        {strength && (
+          <div className="mt-3">
+            <div className="flex justify-between text-xs mb-1">
+              <span>Password Strength</span>
+              <span
+                className={
+                  strength.score === 0
+                    ? "text-red-600"
+                    : strength.score === 1
+                    ? "text-orange-500"
+                    : strength.score === 2
+                    ? "text-yellow-500"
+                    : strength.score === 3
+                    ? "text-blue-600"
+                    : "text-green-600"
+                }
+              >
+                {["Very Weak", "Weak", "Fair", "Strong", "Very Strong"][strength.score]}
+              </span>
+            </div>
+            <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+              <div
+                className={`h-full transition-all duration-300 ${
+                  strength.score === 0
+                    ? "w-1/5 bg-red-600"
+                    : strength.score === 1
+                    ? "w-2/5 bg-orange-500"
+                    : strength.score === 2
+                    ? "w-3/5 bg-yellow-500"
+                    : strength.score === 3
+                    ? "w-4/5 bg-blue-600"
+                    : "w-full bg-green-600"
+                }`}
+              />
+            </div>
+            {strength.feedback?.warning && (
+              <p className="text-red-500 text-xs mt-2">{strength.feedback.warning}</p>
+            )}
+            {strength.feedback?.suggestions?.length > 0 && (
+              <ul className="mt-2 text-xs text-gray-600 list-disc list-inside space-y-1">
+                {strength.feedback.suggestions.map((s) => (
+                  <li key={s}>{s}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+
+        {/* Confirm password */}
+        <div className="flex items-center w-full mt-6 border border-gray-300 rounded-lg overflow-hidden px-4 h-12">
+          <input
+            type="password"
+            placeholder="Confirm password"
+            className="bg-transparent text-gray-700 placeholder-gray-400 outline-none text-sm w-full h-full"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
             required
           />
         </div>
 
         <button
           type="submit"
-          disabled={loading}
-          className="mt-6 w-full h-11 rounded-full text-white bg-indigo-500 hover:opacity-90 transition-opacity disabled:opacity-50"
+          disabled={loading || (strength && strength.score < 3)}
+          className="mt-6 w-full h-11 rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 transition-colors disabled:opacity-50 font-medium"
         >
           {loading ? "Resetting..." : "Reset Password"}
         </button>
+
+        <p className="text-gray-500 text-sm text-center mt-6">
+          Remember your password?{" "}
+          <Link to="/login" className="text-indigo-600 hover:underline font-medium">
+            Back to Login
+          </Link>
+        </p>
       </form>
-      <p className="text-gray-500 text-sm mt-3 mb-10">
-        Remember your password?{" "}
-        <Link to="/login" className="text-indigo-500 hover:underline">
-          Back to Login
-        </Link>
-      </p>
     </div>
   );
 };

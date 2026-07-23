@@ -12,10 +12,11 @@ const Register = () => {
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
   const [strength, setStrength] = useState(null);
-
+  const [showVerifyLink, setShowVerifyLink] = useState(false);
   const { register } = useAuth();
 
   const handleSubmit = async (e) => {
+    setShowVerifyLink(false);
     e.preventDefault();
     setError("");
     setSuccess("");
@@ -30,15 +31,17 @@ const Register = () => {
         );
       } else {
         setError(result.message);
+        setShowVerifyLink(result.canResendVerification);
       }
     } catch (err) {
       console.error("Register error:", err);
-      setError(
-        err.response?.data?.message ||
-          err.response?.data?.msg ||
-          err.message ||
-          "Something went wrong",
-      );
+      const data = err.response?.data;
+
+      setError(data?.message || "Something went wrong");
+
+      if (data?.canResendVerification) {
+        setShowVerifyLink(true);
+      }
     } finally {
       setLoading(false);
     }
@@ -54,12 +57,10 @@ const Register = () => {
         <p className="text-gray-500 text-sm mt-2">
           Please create an account to continue
         </p>
-
         {error && <div className="text-red-500 text-sm mt-2">{error}</div>}
         {success && (
           <div className="text-green-600 text-sm mt-2">{success}</div>
         )}
-
         {/* Name */}
         <div className="flex items-center w-full mt-6 border border-gray-300 h-12 rounded-full pl-6 gap-2">
           <input
@@ -86,7 +87,6 @@ const Register = () => {
             required
           />
         </div>
-
         {/* Email */}
         <div className="flex items-center mt-4 w-full border border-gray-300 h-12 rounded-full pl-6 gap-2">
           <input
@@ -109,7 +109,6 @@ const Register = () => {
             required
           />
         </div>
-
         {/* Password */}
         <div className="flex flex-col mt-4 w-full">
           <div className="flex items-center border border-gray-300 h-12 rounded-full pl-6 gap-2">
@@ -126,7 +125,9 @@ const Register = () => {
                   .split(/[@._-]+/)
                   .filter(Boolean);
                 setStrength(
-                  value ? checkPasswordStrength(value, [name, email,...emailParts]) : null,
+                  value
+                    ? checkPasswordStrength(value, [name, email, ...emailParts])
+                    : null,
                 );
               }}
               required
@@ -191,7 +192,6 @@ const Register = () => {
             </div>
           )}
         </div>
-
         {/* Submit */}
         <button
           type="submit"
@@ -200,13 +200,22 @@ const Register = () => {
         >
           {loading ? "Creating..." : "Sign up"}
         </button>
-
         <p className="text-gray-500 text-sm mt-3">
           Already have an account?{" "}
           <Link to="/login" className="text-indigo-500 hover:underline">
             Login
           </Link>
         </p>
+        {showVerifyLink && (
+          <div className="mt-3 text-sm">
+            <Link
+              to={`/verify-email?email=${encodeURIComponent(email)}`}
+              className="text-indigo-600 hover:underline"
+            >
+              Go to email verification page
+            </Link>
+          </div>
+        )}
       </form>
     </div>
   );

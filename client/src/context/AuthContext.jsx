@@ -49,21 +49,23 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const register = async (userData) => {
-    try {
-      await registerAPI(userData);
-      return {
-        success: true,
-        message:
-          "Registration successful. Please check your email to verify your account.",
-      };
-    } catch (err) {
-      return {
-        success: false,
-        message: err.response?.data?.message || "Registration failed",
-      };
-    }
-  };
+const register = async (userData) => {
+  try {
+    await registerAPI(userData);
+    return {
+      success: true,
+      message:
+        "Registration successful. Please check your email to verify your account.",
+    };
+  } catch (err) {
+    return {
+      success: false,
+      message: err.response?.data?.message || "Registration failed",
+      canResendVerification:
+        err.response?.data?.canResendVerification || false,
+    };
+  }
+};
 
 const logout = async () => {
   try {

@@ -23,10 +23,11 @@ const Home = () => {
         <PricingSection />
       </section>
 
-
-
       <section id="contact" className="scroll-mt-24">
         <Feedback />
+      </section>
+      <section id="footer" className="scroll-mt-24">
+        <Footer />
       </section>
     </>
   );

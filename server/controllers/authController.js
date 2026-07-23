@@ -36,10 +36,20 @@ const register = async (req, res) => {
       });
     }
     const emailAlreadyExists = await User.findOne({ email });
+
     if (emailAlreadyExists) {
-      return res
-        .status(StatusCodes.BAD_REQUEST)
-        .json({ success: false, message: "Email already exists" });
+      if (!emailAlreadyExists.isVerified) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          success: false,
+          message: "Your account exists but hasn't been verified.",
+          canResendVerification: true,
+        });
+      }
+
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "An account with this email already exists.",
+      });
     }
 
     const role = "user";
