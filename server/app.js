@@ -23,7 +23,7 @@ const notFoundMiddleware = require('./middleware/not-found');
 const errorHandlerMiddleware = require('./middleware/error-handler');
 
 const globalRateLimiter = require("./middleware/globalRateLimiter");
-require("./workers/pdfWorker");
+require("./workers/pdfworker");
 
 
 app.use(helmet());
