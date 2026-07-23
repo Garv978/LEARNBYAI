@@ -34,7 +34,7 @@ const HeroSection = () => {
 
             <div className="mt-8 flex flex-wrap justify-center gap-4">
               <a
-                href="#"
+                href="/register"
                 className="inline-block rounded-md border border-blue-600 bg-blue-600 px-6 py-3 font-medium text-white shadow-sm transition hover:bg-blue-700"
               >
                 Get Started

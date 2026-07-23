@@ -1,8 +1,5 @@
 import axios from "axios";
 
-console.log("API URL:", import.meta.env.VITE_API_URL);
-console.log("ALL ENV:", import.meta.env);
-
 const API = axios.create({
   baseURL: `${import.meta.env.VITE_API_URL}/api/v1`,
   withCredentials: true, // Sends refresh token cookie automatically

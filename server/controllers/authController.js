@@ -355,7 +355,7 @@ const resetPassword = async (req, res) => {
   }
 };
 const refresh = async (req, res) => {
-  const refreshToken = req.cookies.refreshToken;
+  const refreshToken = req.signedCookies.refreshToken;
   if (!refreshToken) {
     throw new CustomError.UnauthenticatedError("Invalid Authentication");
   }

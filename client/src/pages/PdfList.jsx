@@ -130,7 +130,7 @@ useEffect(() => {
     } catch (err) {
       console.error(err);
     }
-  }, 5000);
+  }, 5000*60*2); // 10 minutes);
 
   return () => clearInterval(interval);
 }, [pdfs]);
