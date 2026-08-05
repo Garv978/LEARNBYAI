@@ -1,13 +1,98 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <!-- Character Encoding -->
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>client</title>
+
+    <!-- Viewport -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+
+    <!-- Theme -->
+    <meta name="theme-color" content="#2563eb" />
+    <meta name="color-scheme" content="dark light" />
+
+    <!-- SEO -->
+    <title>
+      LearnWithAI | AI PDF Chat, Flashcards, Notes & Quiz Generator
+    </title>
+ 
+
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    
+    <meta
+      name="description"
+      content="Upload PDFs and learn smarter with AI. Instantly chat with documents, generate flashcards, quizzes, summaries, notes, and personalized study material using LearnWithAI."
+    />
+
+    <meta
+      name="keywords"
+      content="AI learning, PDF chatbot, chat with PDF, AI notes, AI flashcards, AI quiz generator, PDF summarizer, study assistant, RAG, MERN, LearnWithAI"
+    />
+
+    <meta name="author" content="Garv" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="language" content="English" />
+
+    <!-- Canonical -->
+    <link
+      rel="canonical"
+      href="https://learnbyai-alpha.vercel.app/"
+    />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="LearnWithAI" />
+    <meta property="og:title" content="LearnWithAI" />
+    <meta
+      property="og:description"
+      content="Upload PDFs, chat with documents using AI, generate summaries, quizzes, flashcards, and notes in seconds."
+    />
+    <meta
+      property="og:url"
+      content="https://learnbyai-alpha.vercel.app/"
+    />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="LearnWithAI" />
+    <meta
+      name="twitter:description"
+      content="AI-powered PDF learning platform with chat, notes, quizzes, flashcards and summaries."
+    />
+    
+    <!-- Performance -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="format-detection" content="telephone=no" />
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "LearnWithAI",
+        "url": "https://learnbyai-alpha.vercel.app/",
+        "applicationCategory": "EducationalApplication",
+        "operatingSystem": "Web",
+        "description": "AI-powered platform for chatting with PDFs, generating summaries, flashcards, quizzes, and notes.",
+        "creator": {
+          "@type": "Person",
+          "name": "Garv"
+        }
+      }
+    </script>
   </head>
+
   <body>
+    <noscript>
+      LearnWithAI requires JavaScript to run. Please enable JavaScript in your
+      browser.
+    </noscript>
+
     <div id="root"></div>
+
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
