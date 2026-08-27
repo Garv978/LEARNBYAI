@@ -22,14 +22,14 @@ jobs:
         with:
           node-version: 24
 
-      - name: Audit Backend
-        working-directory: Backend
+      - name: Audit Server
+        working-directory: server
         run: |
           npm ci
           npm audit --audit-level=high
 
-      - name: Audit Frontend
-        working-directory: Frontend
+      - name: Audit Client
+        working-directory: client
         run: |
           npm ci
           npm audit --audit-level=high
