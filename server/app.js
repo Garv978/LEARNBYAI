@@ -43,6 +43,9 @@ app.get("/api/v1/csrf-token", (req, res) => {
     csrfToken: generateToken(req, res),
   });
 });
+
+app.use(doubleCsrfProtection);
+
 app.use(globalRateLimiter);
 
 app.use('/api/v1/auth', authRouter);
