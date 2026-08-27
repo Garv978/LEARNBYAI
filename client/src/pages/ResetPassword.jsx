@@ -1,5 +1,5 @@
 import { Link, useSearchParams } from "react-router-dom";
-import React, { useState } from "react";
+import { useState } from "react";
 
 import { checkPasswordStrength } from "../utils/zxcvbn"; // ✅ import zxcvbn wrapper
 import { resetPassword as resetPasswordAPI } from "../services/AuthServices";

@@ -1,6 +1,6 @@
 // AuthContext.js
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import {
   forgotPassword as forgotPasswordAPI,
   login as loginAPI,

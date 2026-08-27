@@ -1,7 +1,5 @@
 import { FaBrain, FaEnvelope, FaExternalLinkAlt, FaGithub, FaLinkedin } from "react-icons/fa";
 
-import React from "react";
-
 const Footer = () => {
   return (
     <footer className="bg-zinc-950 border-t border-zinc-800">

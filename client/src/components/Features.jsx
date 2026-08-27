@@ -1,7 +1,5 @@
 import { FaBookOpen, FaClipboardList, FaFilePdf, FaLightbulb, FaRobot } from "react-icons/fa";
 
-import React from "react";
-
 const features = [
   {
     icon: <FaFilePdf size={28} className="text-blue-500" />,

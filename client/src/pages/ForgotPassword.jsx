@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 
 import { forgotPassword } from "../services/AuthServices"; // make sure this is implemented
 
