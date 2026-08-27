@@ -1,7 +1,7 @@
 import { Link, useSearchParams } from "react-router-dom";
-import  { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 
 const VerifyEmail = () => {
   const [searchParams] = useSearchParams();
@@ -10,43 +10,40 @@ const VerifyEmail = () => {
 
   const { verifyEmail, resendVerifyEmail } = useAuth();
 
-  const [status, setStatus] = useState("pending"); // pending | success | error
+  const [status, setStatus] = useState("pending");
   const [message, setMessage] = useState("");
 
-useEffect(() => {
-  const verify = async () => {
-    try {
-      const result = await verifyEmail({
-        verificationToken: token,
-        email,
-      });
+  const hasValidParams = Boolean(token && email);
 
-      if (result.success) {
-        setStatus("success");
-        setMessage("Email verified successfully! You can now log in.");
-      } else {
+  useEffect(() => {
+    if (!hasValidParams) return;
+
+    const verify = async () => {
+      try {
+        const result = await verifyEmail({
+          verificationToken: token,
+          email,
+        });
+
+        if (result.success) {
+          setStatus("success");
+          setMessage("Email verified successfully! You can now log in.");
+        } else {
+          setStatus("error");
+          setMessage(result.message || "Verification failed.");
+        }
+      } catch (err) {
         setStatus("error");
-        setMessage(result.message || "Verification failed.");
+        setMessage(
+          err?.response?.data?.msg ||
+            err?.message ||
+            "Verification link has expired.",
+        );
       }
-    } catch (err) {
-      setStatus("error");
-      setMessage(
-        err?.response?.data?.msg ||
-          err?.message ||
-          "Verification link has expired."
-      );
-    }
-  };
+    };
 
-  if (!token || !email) {
-    setStatus("error");
-    setMessage("Invalid verification link.");
-    return;
-  }
-
-  verify();
-}, [token, email]);
-
+    verify();
+  }, [token, email, verifyEmail, hasValidParams]);
   const handleResend = async () => {
     const result = await resendVerifyEmail({ email });
     setMessage(result.message);
@@ -78,12 +75,14 @@ useEffect(() => {
         </h1>
 
         <p className="text-gray-600 mt-3">
-          {status === "pending" && "Verifying your email..."}
-          {status === "success" && message}
-          {status === "error" && message}
+          {!token || !email
+            ? "Invalid verification link."
+            : status === "pending"
+              ? "Verifying your email..."
+              : message}
         </p>
 
-        {status === "error" && (
+        {status === "error" && email && (
           <button
             onClick={handleResend}
             className="mt-8 w-full h-11 rounded-full bg-indigo-500 hover:opacity-90 text-white transition"

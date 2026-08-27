@@ -1,9 +1,11 @@
 // AuthContext.js
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { useState } from "react";
+import { AuthContext } from "./AuthContextValue";
 import {
   forgotPassword as forgotPasswordAPI,
   login as loginAPI,
+  logout as logoutAPI,
   refresh as refreshAPI,
   register as registerAPI,
   resendVerifyEmail as resendVerifyEmailAPI,
@@ -13,26 +15,24 @@ import {
 
 import { jwtDecode } from "jwt-decode";
 
-const AuthContext = createContext();
-export const useAuth = () => useContext(AuthContext);
+const getInitialUser = () => {
+  const token = localStorage.getItem("accessToken");
+
+  if (!token) return null;
+
+  try {
+    return jwtDecode(token);
+  } catch {
+    localStorage.removeItem("accessToken");
+    return null;
+  }
+};
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const token = localStorage.getItem("accessToken");
-    if (token) {
-      try {
-        setUser(jwtDecode(token));
-        setIsAuthenticated(true);
-      } catch {
-        localStorage.removeItem("accessToken");
-      }
-    }
-    setLoading(false);
-  }, []);
+  const initialUser = getInitialUser();
+  const [user, setUser] = useState(initialUser);
+  const [isAuthenticated, setIsAuthenticated] = useState(initialUser !== null);
+  const loading = false;
 
   const login = async (userData) => {
     try {
@@ -49,42 +49,41 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-const register = async (userData) => {
-  try {
-    await registerAPI(userData);
-    return {
-      success: true,
-      message:
-        "Registration successful. Please check your email to verify your account.",
-    };
-  } catch (err) {
-    return {
-      success: false,
-      message: err.response?.data?.message || "Registration failed",
-      canResendVerification:
-        err.response?.data?.canResendVerification || false,
-    };
-  }
-};
+  const register = async (userData) => {
+    try {
+      await registerAPI(userData);
+      return {
+        success: true,
+        message:
+          "Registration successful. Please check your email to verify your account.",
+      };
+    } catch (err) {
+      return {
+        success: false,
+        message: err.response?.data?.message || "Registration failed",
+        canResendVerification:
+          err.response?.data?.canResendVerification || false,
+      };
+    }
+  };
 
-const logout = async () => {
-  try {
-    // Call backend logout to clear cookies + invalidate refresh token
-    await API.post("/auth/logout");
+  const logout = async () => {
+    try {
+      // Call backend logout to clear cookies + invalidate refresh token
+      await logoutAPI();
 
-    // Clear frontend state
-    localStorage.removeItem("accessToken");
-    setUser(null);
-    setIsAuthenticated(false);
-  } catch (err) {
-    console.error("Logout failed:", err);
-    // Still clear local state to force logout
-    localStorage.removeItem("accessToken");
-    setUser(null);
-    setIsAuthenticated(false);
-  }
-};
-
+      // Clear frontend state
+      localStorage.removeItem("accessToken");
+      setUser(null);
+      setIsAuthenticated(false);
+    } catch (err) {
+      console.error("Logout failed:", err);
+      // Still clear local state to force logout
+      localStorage.removeItem("accessToken");
+      setUser(null);
+      setIsAuthenticated(false);
+    }
+  };
 
   const verifyEmail = async (userData) => {
     try {
@@ -98,16 +97,17 @@ const logout = async () => {
     }
   };
   const resendVerifyEmail = async (userData) => {
-    try{
+    try {
       await resendVerifyEmailAPI(userData);
       return { success: true, message: "Verification email resent" };
-    }catch(err){
-      return{
+    } catch (err) {
+      return {
         success: false,
-        message: err.response?.data?.message || "Resend verification email failed",
-      }
+        message:
+          err.response?.data?.message || "Resend verification email failed",
+      };
     }
-  }
+  };
   const refresh = async () => {
     try {
       const res = await refreshAPI(); // no userData needed, backend uses cookies

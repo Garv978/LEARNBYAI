@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { getAllPdfs, getPdfStatus, uploadPdf } from "../services/PdfServices";
+import { getAllPdfs, uploadPdf } from "../services/PdfServices";
 
 import { Link } from "react-router-dom";
 
@@ -103,17 +103,6 @@ const PdfCard = ({ pdf }) => {
 const PdfList = () => {
   const [pdfs, setPdfs] = useState([]);
 
-  const fetchPdfs = async () => {
-    try {
-      const { data } = await getAllPdfs();
-      setPdfs(data.pdfs);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-
-
 useEffect(() => {
   const processing = pdfs.some(
     (pdf) =>
@@ -136,7 +125,21 @@ useEffect(() => {
 }, [pdfs]);
 
 useEffect(() => {
-  fetchPdfs();
+  let ignore = false;
+
+  getAllPdfs()
+    .then(({ data }) => {
+      if (!ignore) {
+        setPdfs(data.pdfs);
+      }
+    })
+    .catch((err) => {
+      console.error(err);
+    });
+
+  return () => {
+    ignore = true;
+  };
 }, []);
 
   const handleUpload = async (file) => {
