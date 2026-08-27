@@ -8,8 +8,9 @@ const cookieParser = require('cookie-parser');
 const helmet = require('helmet');
 const cors = require('cors');
 const {
-  generateToken,
+  generateCsrfToken,
   doubleCsrfProtection,
+  csrfSessionMiddleware,
 } = require("./middleware/csrf");
 
 // database
@@ -38,11 +39,15 @@ app.use(cors({
 
 app.use(express.json());
 app.use(cookieParser(process.env.JWT_SECRET));
+app.use(csrfSessionMiddleware);
 app.get("/api/v1/csrf-token", (req, res) => {
+  const csrfToken = generateCsrfToken(req, res);
+
   res.json({
-    csrfToken: generateToken(req, res),
+    csrfToken,
   });
 });
+
 
 app.use(doubleCsrfProtection);
 

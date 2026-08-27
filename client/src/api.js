@@ -2,18 +2,45 @@ import axios from "axios";
 
 const API = axios.create({
   baseURL: `${import.meta.env.VITE_API_URL}/api/v1`,
-  withCredentials: true, // Sends refresh token cookie automatically
+  withCredentials: true,
 });
+
+let csrfToken = null;
+
+// ====================
+// Get CSRF Token
+// ====================
+
+const getCsrfToken = async () => {
+  if (csrfToken) {
+    return csrfToken;
+  }
+
+  const response = await API.get("/csrf-token");
+
+  csrfToken = response.data.csrfToken;
+
+  return csrfToken;
+};
 
 // ====================
 // Request Interceptor
 // ====================
+
 API.interceptors.request.use(
-  (config) => {
+  async (config) => {
     const accessToken = localStorage.getItem("accessToken");
 
     if (accessToken) {
       config.headers.Authorization = `Bearer ${accessToken}`;
+    }
+
+    const method = config.method?.toUpperCase();
+
+    if (["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
+      const token = await getCsrfToken();
+
+      config.headers["X-CSRF-Token"] = token;
     }
 
     return config;
@@ -24,13 +51,13 @@ API.interceptors.request.use(
 // ====================
 // Response Interceptor
 // ====================
+
 API.interceptors.response.use(
   (response) => response,
 
   async (error) => {
     const originalRequest = error.config;
 
-    // Don't refresh twice
     if (
       error.response?.status === 401 &&
       !originalRequest._retry &&
@@ -39,24 +66,18 @@ API.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        // Refresh access token
         const res = await API.post("/auth/refresh");
 
         const newAccessToken = res.data.accessToken;
 
-        // Save new access token
         localStorage.setItem("accessToken", newAccessToken);
 
-        // Update header for the failed request
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
 
-        // Retry original request
         return API(originalRequest);
       } catch (refreshError) {
-        // Refresh token is also invalid
         localStorage.removeItem("accessToken");
 
-        // Redirect to login
         window.location.href = "/login";
 
         return Promise.reject(refreshError);
