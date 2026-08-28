@@ -18,10 +18,18 @@ const register = async (req, res) => {
   try {
     const { email, name, password } = req.body;
 
-    if (!email || !name || !password) {
-      return res
-        .status(StatusCodes.BAD_REQUEST)
-        .json({ success: false, message: "All fields are required" });
+    if (
+      typeof email !== "string" ||
+      typeof password !== "string" ||
+      typeof name !== "string" ||
+      !email ||
+      !password ||
+      !name
+    ) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Please provide a valid email and password",
+      });
     }
     const strength = validatePasswordStrength(password, [name, email]);
 
@@ -35,7 +43,7 @@ const register = async (req, res) => {
           "Password is too weak.",
       });
     }
-    const emailAlreadyExists = await User.findOne({ email });
+    const emailAlreadyExists = await User.findOne({ email: { $eq: email } });
 
     if (emailAlreadyExists) {
       if (!emailAlreadyExists.isVerified) {
@@ -84,12 +92,14 @@ const register = async (req, res) => {
 const verifyEmail = async (req, res) => {
   try {
     const { verificationToken, email } = req.body;
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res
-        .status(StatusCodes.NOT_FOUND)
-        .json({ success: false, message: "User not registered" });
+    if (typeof email !== "string" || typeof verificationToken !== "string") {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Invalid request",
+      });
     }
+
+    const user = await User.findOne({ email: { $eq: email } });
 
     const isValid = user.isVerificationTokenValid(verificationToken);
     if (!isValid) {
@@ -117,14 +127,14 @@ const verifyEmail = async (req, res) => {
 const resendVerifyEmail = async (req, res) => {
   try {
     const { email } = req.body;
-    if (!email) {
+    if (typeof email !== "string" || !email) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
         message: "Email is required",
       });
     }
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: { $eq: email } });
     if (!user) {
       return res.status(StatusCodes.NOT_FOUND).json({
         success: false,
@@ -181,13 +191,18 @@ const resendVerifyEmail = async (req, res) => {
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email || !password) {
+    if (
+      typeof email !== "string" ||
+      typeof password !== "string" ||
+      !email ||
+      !password
+    ) {
       return res
         .status(StatusCodes.BAD_REQUEST)
         .json({ success: false, message: "Please provide email and password" });
     }
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({email: { $eq: email },});
     if (!user) {
       return res
         .status(StatusCodes.UNAUTHORIZED)
@@ -278,13 +293,13 @@ const logout = async (req, res) => {
 const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
-    if (!email) {
+    if (typeof email !== "string" || !email) {
       return res
         .status(StatusCodes.BAD_REQUEST)
         .json({ success: false, message: "Please provide email" });
     }
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: { $eq: email } });
     if (user) {
       const passwordToken = user.createPasswordResetToken();
       await user.save();
@@ -313,13 +328,20 @@ const forgotPassword = async (req, res) => {
 const resetPassword = async (req, res) => {
   try {
     const { email, token, newPassword } = req.body;
-    if (!token || !email || !newPassword) {
+    if (
+      typeof token !== "string" ||
+      typeof email !== "string" ||
+      typeof newPassword !== "string" ||
+      !token ||
+      !email ||
+      !newPassword
+    ) {
       return res
         .status(StatusCodes.BAD_REQUEST)
         .json({ success: false, message: "Invalid request" });
     }
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: { $eq: email } });
     if (!user) {
       return res
         .status(StatusCodes.NOT_FOUND)
@@ -348,13 +370,6 @@ const resetPassword = async (req, res) => {
     user.passwordToken = null;
     user.passwordTokenExpirationDate = null;
     await user.save();
-    await Token.updateMany(
-      { user: req.user.userId, isValid: true },
-      {
-        isValid: false,
-        loggedOutAt: new Date(),
-      },
-    );
     res
       .status(StatusCodes.OK)
       .json({ success: true, message: "Password reset successful" });
