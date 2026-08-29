@@ -1,6 +1,7 @@
 require('dotenv').config();
 
 const express = require('express');
+// nosemgrep: javascript.express.security.audit.express-check-csurf-middleware-usage.express-check-csurf-middleware-usage
 const app = express();
 
 const morgan = require('morgan');

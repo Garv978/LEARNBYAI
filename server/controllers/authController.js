@@ -8,11 +8,19 @@ const {
   createJWT,
   validatePasswordStrength,
 } = require("../utils");
-const crypto = require("crypto");
+const crypto = require("node:crypto");
 const { sendEmail } = require("../utils");
 const Token = require("../models/Token");
 
 const origin = process.env.CLIENT_URL || "http://localhost:5173";
+
+const escapeHtml = (value) =>
+  String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 
 const register = async (req, res) => {
   try {
@@ -31,6 +39,7 @@ const register = async (req, res) => {
         message: "Please provide a valid email and password",
       });
     }
+
     const strength = validatePasswordStrength(password, [name, email]);
 
     if (!strength.isStrong) {
@@ -43,7 +52,10 @@ const register = async (req, res) => {
           "Password is too weak.",
       });
     }
-    const emailAlreadyExists = await User.findOne({ email: { $eq: email } });
+
+    const emailAlreadyExists = await User.findOne({
+      email: { $eq: email },
+    });
 
     if (emailAlreadyExists) {
       if (!emailAlreadyExists.isVerified) {
@@ -65,14 +77,20 @@ const register = async (req, res) => {
     const rawToken = user.createVerificationToken();
     await user.save();
 
-    const verifyEmail = `${origin}/verify-email?token=${rawToken}&email=${user.email}`;
+    const verifyEmail = `${origin}/verify-email?token=${rawToken}&email=${encodeURIComponent(
+      user.email
+    )}`;
+
+    const safeName = escapeHtml(user.name);
+    const safeVerifyEmail = escapeHtml(verifyEmail);
+
     await sendEmail({
       to: user.email,
       subject: "Verify Email",
       html: `
-        <h2>Welcome ${user.name}</h2>
+        <h2>Welcome ${safeName}</h2>
         <p>Your verification token:</p>
-        <a href="${verifyEmail}">Verify Email</a>
+        <a href="${safeVerifyEmail}">Verify Email</a>
       `,
     });
 
@@ -92,6 +110,7 @@ const register = async (req, res) => {
 const verifyEmail = async (req, res) => {
   try {
     const { verificationToken, email } = req.body;
+
     if (typeof email !== "string" || typeof verificationToken !== "string") {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
@@ -99,9 +118,12 @@ const verifyEmail = async (req, res) => {
       });
     }
 
-    const user = await User.findOne({ email: { $eq: email } });
+    const user = await User.findOne({
+      email: { $eq: email },
+    });
 
     const isValid = user.isVerificationTokenValid(verificationToken);
+
     if (!isValid) {
       return res
         .status(StatusCodes.BAD_REQUEST)
@@ -112,6 +134,7 @@ const verifyEmail = async (req, res) => {
     user.verified = new Date();
     user.verificationToken = null;
     user.verificationTokenExpiry = null;
+
     await user.save();
 
     res
@@ -127,6 +150,7 @@ const verifyEmail = async (req, res) => {
 const resendVerifyEmail = async (req, res) => {
   try {
     const { email } = req.body;
+
     if (typeof email !== "string" || !email) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
@@ -134,7 +158,10 @@ const resendVerifyEmail = async (req, res) => {
       });
     }
 
-    const user = await User.findOne({ email: { $eq: email } });
+    const user = await User.findOne({
+      email: { $eq: email },
+    });
+
     if (!user) {
       return res.status(StatusCodes.NOT_FOUND).json({
         success: false,
@@ -149,7 +176,7 @@ const resendVerifyEmail = async (req, res) => {
       });
     }
 
-    // Cooldown check: block if token still valid
+    // Cooldown check: block if token is still valid.
     if (
       user.verificationTokenExpiry &&
       user.verificationTokenExpiry > Date.now()
@@ -160,19 +187,24 @@ const resendVerifyEmail = async (req, res) => {
       });
     }
 
-    // Generate new token + expiry
+    // Generate a new token and expiry.
     const rawToken = user.createVerificationToken();
     await user.save();
 
-    const verifyEmailLink = `${origin}/verify-email?token=${rawToken}&email=${user.email}`;
+    const verifyEmailLink = `${
+      origin
+    }/verify-email?token=${rawToken}&email=${encodeURIComponent(user.email)}`;
+
+    const safeName = escapeHtml(user.name);
+    const safeVerifyEmailLink = escapeHtml(verifyEmailLink);
 
     await sendEmail({
       to: user.email,
       subject: "Verify Email",
       html: `
-        <h2>Welcome ${user.name}</h2>
+        <h2>Welcome ${safeName}</h2>
         <p>Click the link below to verify your account:</p>
-        <a href="${verifyEmailLink}">Verify Email</a>
+        <a href="${safeVerifyEmailLink}">Verify Email</a>
       `,
     });
 
@@ -191,6 +223,7 @@ const resendVerifyEmail = async (req, res) => {
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
+
     if (
       typeof email !== "string" ||
       typeof password !== "string" ||
@@ -202,7 +235,10 @@ const login = async (req, res) => {
         .json({ success: false, message: "Please provide email and password" });
     }
 
-    const user = await User.findOne({email: { $eq: email },});
+    const user = await User.findOne({
+      email: { $eq: email },
+    });
+
     if (!user) {
       return res
         .status(StatusCodes.UNAUTHORIZED)
@@ -210,6 +246,7 @@ const login = async (req, res) => {
     }
 
     const isPasswordCorrect = await user.comparePassword(password);
+
     if (!isPasswordCorrect) {
       return res
         .status(StatusCodes.UNAUTHORIZED)
@@ -225,15 +262,26 @@ const login = async (req, res) => {
     const tokenUser = createTokenUser(user);
 
     let refreshToken = "";
-    const existingToken = await Token.findOne({ user: user._id });
+
+    const existingToken = await Token.findOne({
+      user: user._id,
+    });
+
     if (existingToken) {
       if (!existingToken.isValid) {
         return res
           .status(StatusCodes.UNAUTHORIZED)
           .json({ success: false, message: "Invalid credentials" });
       }
+
       refreshToken = existingToken.refreshToken;
-      attachCookiesToResponse({ res, user: tokenUser, refreshToken });
+
+      attachCookiesToResponse({
+        res,
+        user: tokenUser,
+        refreshToken,
+      });
+
       return res.status(StatusCodes.OK).json({
         success: true,
         user: tokenUser,
@@ -245,12 +293,27 @@ const login = async (req, res) => {
     }
 
     refreshToken = crypto.randomBytes(40).toString("hex");
+
     const userAgent = req.headers["user-agent"];
     const ip = req.ip;
-    await Token.create({ refreshToken, ip, userAgent, user: user._id });
 
-    attachCookiesToResponse({ res, user: tokenUser, refreshToken });
-    res.status(StatusCodes.OK).json({ success: true, user: tokenUser });
+    await Token.create({
+      refreshToken,
+      ip,
+      userAgent,
+      user: user._id,
+    });
+
+    attachCookiesToResponse({
+      res,
+      user: tokenUser,
+      refreshToken,
+    });
+
+    res.status(StatusCodes.OK).json({
+      success: true,
+      user: tokenUser,
+    });
   } catch (err) {
     res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
@@ -261,11 +324,14 @@ const login = async (req, res) => {
 const logout = async (req, res) => {
   try {
     await Token.updateMany(
-      { user: req.user.userId, isValid: true },
+      {
+        user: req.user.userId,
+        isValid: true,
+      },
       {
         isValid: false,
         loggedOutAt: new Date(),
-      },
+      }
     );
 
     const cookieOptions = {
@@ -293,23 +359,36 @@ const logout = async (req, res) => {
 const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
+
     if (typeof email !== "string" || !email) {
       return res
         .status(StatusCodes.BAD_REQUEST)
         .json({ success: false, message: "Please provide email" });
     }
 
-    const user = await User.findOne({ email: { $eq: email } });
+    const user = await User.findOne({
+      email: { $eq: email },
+    });
+
     if (user) {
       const passwordToken = user.createPasswordResetToken();
       await user.save();
-      const resetLink = `${origin}/reset-password?token=${passwordToken}&email=${user.email}`;
+
+      const resetLink = `${
+        origin
+      }/reset-password?token=${passwordToken}&email=${encodeURIComponent(
+        user.email
+      )}`;
+
+      const safeName = escapeHtml(user.name);
+      const safeResetLink = escapeHtml(resetLink);
+
       await sendEmail({
         to: user.email,
         subject: "Reset Password",
         html: `
-          <h2>Hello ${user.name}, please reset your password by clicking below:</h2>
-          <a href="${resetLink}">Reset Password</a>
+          <h2>Hello ${safeName}, please reset your password by clicking below:</h2>
+          <a href="${safeResetLink}">Reset Password</a>
         `,
       });
     }
@@ -328,6 +407,7 @@ const forgotPassword = async (req, res) => {
 const resetPassword = async (req, res) => {
   try {
     const { email, token, newPassword } = req.body;
+
     if (
       typeof token !== "string" ||
       typeof email !== "string" ||
@@ -341,7 +421,10 @@ const resetPassword = async (req, res) => {
         .json({ success: false, message: "Invalid request" });
     }
 
-    const user = await User.findOne({ email: { $eq: email } });
+    const user = await User.findOne({
+      email: { $eq: email },
+    });
+
     if (!user) {
       return res
         .status(StatusCodes.NOT_FOUND)
@@ -349,11 +432,13 @@ const resetPassword = async (req, res) => {
     }
 
     const isValid = user.isPasswordResetTokenValid(token);
+
     if (!isValid) {
       return res
         .status(StatusCodes.UNAUTHORIZED)
         .json({ success: false, message: "Invalid or expired token" });
     }
+
     const strength = validatePasswordStrength(newPassword, [user.name, email]);
 
     if (!strength.isStrong) {
@@ -366,10 +451,13 @@ const resetPassword = async (req, res) => {
           "Password is too weak.",
       });
     }
+
     user.password = newPassword;
     user.passwordToken = null;
     user.passwordTokenExpirationDate = null;
+
     await user.save();
+
     res
       .status(StatusCodes.OK)
       .json({ success: true, message: "Password reset successful" });
@@ -379,15 +467,18 @@ const resetPassword = async (req, res) => {
       .json({ success: false, message: err.message || "Server error" });
   }
 };
+
 const refresh = async (req, res) => {
   const refreshToken = req.signedCookies.refreshToken;
+
   if (!refreshToken) {
     throw new CustomError.UnauthenticatedError("Invalid Authentication");
   }
 
   let payload;
+
   try {
-    payload = isTokenValid(refreshToken); // decoded { user, refreshToken }
+    payload = isTokenValid(refreshToken);
   } catch (err) {
     throw new CustomError.UnauthenticatedError("Authentication invalid");
   }
@@ -396,24 +487,22 @@ const refresh = async (req, res) => {
     user: payload.user.userId,
     refreshToken: payload.refreshToken,
   });
+
   if (!existingToken || !existingToken.isValid) {
     throw new CustomError.UnauthenticatedError("Authentication invalid");
   }
 
-  // Issue new access token
   const newAccessToken = createJWT({
     payload: { user: payload.user },
     expiresIn: "15m",
   });
 
-  // Re‑attach cookies (optional, keeps them fresh)
   attachCookiesToResponse({
     res,
     user: payload.user,
     refreshToken: payload.refreshToken,
   });
 
-  // Return new access token in JSON
   res.status(StatusCodes.OK).json({
     success: true,
     accessToken: newAccessToken,
