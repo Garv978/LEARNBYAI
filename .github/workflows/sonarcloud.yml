@@ -1,34 +1,38 @@
-name: SonarCloud analysis
+name: SonarCloud Analysis
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
   pull_request:
-    branches: [ "main" ]
-  workflow_dispatch:
+    types: [opened, synchronize, reopened]
 
 permissions:
+  contents: read
   pull-requests: read
 
 jobs:
-  Analysis:
+  analysis:
+    name: SonarCloud Analysis
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Set up JDK 21
+      - name: Set up Java 21
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: temurin
           java-version: '21'
 
-      - name: Analyze with SonarCloud
-        uses: SonarSource/sonarcloud-github-action@v2
+      - name: SonarCloud Analysis
+        uses: SonarSource/sonarcloud-github-action@v4
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           args: >
             -Dsonar.projectKey=Garv978_LEARNBYAI
             -Dsonar.organization=garv978
-          projectBaseDir: .
