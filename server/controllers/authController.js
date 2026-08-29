@@ -81,14 +81,13 @@ const register = async (req, res) => {
       user.email
     )}`;
 
-    const safeName = escapeHtml(user.name);
     const safeVerifyEmail = escapeHtml(verifyEmail);
 
     await sendEmail({
       to: user.email,
       subject: "Verify Email",
       html: `
-        <h2>Welcome ${safeName}</h2>
+        <h2>Welcome </h2>
         <p>Your verification token:</p>
         <a href="${safeVerifyEmail}">Verify Email</a>
       `,
@@ -195,14 +194,13 @@ const resendVerifyEmail = async (req, res) => {
       origin
     }/verify-email?token=${rawToken}&email=${encodeURIComponent(user.email)}`;
 
-    const safeName = escapeHtml(user.name);
     const safeVerifyEmailLink = escapeHtml(verifyEmailLink);
 
     await sendEmail({
       to: user.email,
       subject: "Verify Email",
       html: `
-        <h2>Welcome ${safeName}</h2>
+        <h2>Welcome</h2>
         <p>Click the link below to verify your account:</p>
         <a href="${safeVerifyEmailLink}">Verify Email</a>
       `,
@@ -380,14 +378,13 @@ const forgotPassword = async (req, res) => {
         user.email
       )}`;
 
-      const safeName = escapeHtml(user.name);
       const safeResetLink = escapeHtml(resetLink);
 
       await sendEmail({
         to: user.email,
         subject: "Reset Password",
         html: `
-          <h2>Hello ${safeName}, please reset your password by clicking below:</h2>
+          <h2>Hello, please reset your password by clicking below:</h2>
           <a href="${safeResetLink}">Reset Password</a>
         `,
       });
