@@ -58,8 +58,9 @@ const Feedback = () => {
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div className="flex flex-col gap-2.5">
-                <label className="text-zinc-400 text-sm">First Name</label>
+                <label htmlFor="firstName" className="text-zinc-400 text-sm">First Name</label>
                 <input
+                  id="firstName"
                   name="firstName"
                   value={form.firstName}
                   onChange={handleChange}
@@ -69,8 +70,9 @@ const Feedback = () => {
                 />
               </div>
               <div className="flex flex-col gap-2.5">
-                <label className="text-zinc-400 text-sm">Last Name</label>
+                <label htmlFor="lastName" className="text-zinc-400 text-sm">Last Name</label>
                 <input
+                  id="lastName"
                   name="lastName"
                   value={form.lastName}
                   onChange={handleChange}
@@ -82,8 +84,9 @@ const Feedback = () => {
             </div>
             
             <div className="flex flex-col gap-2.5">
-              <label className="text-zinc-400 text-sm">Email</label>
+              <label htmlFor="email" className="text-zinc-400 text-sm">Email</label>
               <input
+                id="email"
                 name="email"
                 value={form.email}
                 onChange={handleChange}
@@ -94,8 +97,9 @@ const Feedback = () => {
             </div>
 
             <div className="flex flex-col gap-2.5">
-              <label className="text-zinc-400 text-sm">Message</label>
+              <label htmlFor="message" className="text-zinc-400 text-sm">Message</label>
               <textarea
+                id="message"
                 name="message"
                 value={form.message}
                 onChange={handleChange}
