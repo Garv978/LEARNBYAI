@@ -27,7 +27,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: client
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Run ESLint
         working-directory: client

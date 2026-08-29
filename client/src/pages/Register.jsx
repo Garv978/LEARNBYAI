@@ -1,29 +1,10 @@
 import { useState } from "react";
-
 import { Link } from "react-router-dom";
+
 import { checkPasswordStrength } from "../utils/zxcvbn";
+import { getEmailParts } from "../utils/emailUtils";
 import { useAuth } from "../context/useAuth";
-
-const getEmailParts = (value = "") =>
-  value.toLowerCase().split(/[@._-]+/).filter(Boolean);
-
-const getStrengthTextClass = (score) => {
-  if (score === 0) return "text-red-600";
-  if (score === 1) return "text-orange-500";
-  if (score === 2) return "text-yellow-500";
-  if (score === 3) return "text-blue-600";
-
-  return "text-green-600";
-};
-
-const getStrengthBarClass = (score) => {
-  if (score === 0) return "w-1/5 bg-red-600";
-  if (score === 1) return "w-2/5 bg-orange-500";
-  if (score === 2) return "w-3/5 bg-yellow-500";
-  if (score === 3) return "w-4/5 bg-blue-600";
-
-  return "w-full bg-green-600";
-};
+import PasswordStrengthMeter from "../components/PasswordStrengthMeter";
 
 const Register = () => {
   const [name, setName] = useState("");
@@ -34,51 +15,46 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const [strength, setStrength] = useState(null);
   const [showVerifyLink, setShowVerifyLink] = useState(false);
+
   const { register } = useAuth();
+
+  const updatePasswordStrength = (passwordValue, nameValue, emailValue) => {
+    if (!passwordValue) {
+      setStrength(null);
+      return;
+    }
+
+    setStrength(
+      checkPasswordStrength(passwordValue, [
+        nameValue,
+        emailValue,
+        ...getEmailParts(emailValue),
+      ])
+    );
+  };
 
   const handleNameChange = (e) => {
     const value = e.target.value;
+
     setName(value);
 
-    if (!password) return;
-
-    setStrength(
-      checkPasswordStrength(password, [
-        value,
-        email,
-        ...getEmailParts(email),
-      ])
-    );
+    updatePasswordStrength(value ? password : "", value, email);
   };
 
   const handleEmailChange = (e) => {
     const value = e.target.value;
+
     setEmail(value);
 
-    if (!password) return;
-
-    setStrength(
-      checkPasswordStrength(password, [
-        name,
-        value,
-        ...getEmailParts(value),
-      ])
-    );
+    updatePasswordStrength(password, name, value);
   };
 
   const handlePasswordChange = (e) => {
     const value = e.target.value;
+
     setPassword(value);
 
-    setStrength(
-      value
-        ? checkPasswordStrength(value, [
-            name,
-            email,
-            ...getEmailParts(email),
-          ])
-        : null
-    );
+    updatePasswordStrength(value, name, email);
   };
 
   const handleRegistrationResult = (result) => {
@@ -114,7 +90,12 @@ const Register = () => {
     setLoading(true);
 
     try {
-      const result = await register({ name, email, password });
+      const result = await register({
+        name,
+        email,
+        password,
+      });
+
       handleRegistrationResult(result);
     } catch (err) {
       handleRegistrationError(err);
@@ -186,44 +167,7 @@ const Register = () => {
             />
           </div>
 
-          {/* Strength meter */}
-          {strength && (
-            <div className="mt-3">
-              <div className="flex justify-between text-xs mb-1">
-                <span>Password Strength</span>
-
-                <span className={getStrengthTextClass(strength.score)}>
-                  {
-                    ["Very Weak", "Weak", "Fair", "Strong", "Very Strong"][
-                      strength.score
-                    ]
-                  }
-                </span>
-              </div>
-
-              <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                <div
-                  className={`h-full transition-all duration-300 ${getStrengthBarClass(
-                    strength.score
-                  )}`}
-                />
-              </div>
-
-              {strength.feedback?.warning && (
-                <p className="text-red-500 text-xs mt-2">
-                  {strength.feedback.warning}
-                </p>
-              )}
-
-              {strength.feedback?.suggestions?.length > 0 && (
-                <ul className="mt-2 text-xs text-gray-600 list-disc list-inside space-y-1">
-                  {strength.feedback.suggestions.map((s) => (
-                    <li key={s}>{s}</li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          )}
+          <PasswordStrengthMeter strength={strength} />
         </div>
 
         {/* Submit */}
