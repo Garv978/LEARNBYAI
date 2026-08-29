@@ -16,11 +16,11 @@ const origin = process.env.CLIENT_URL || "http://localhost:5173";
 
 const escapeHtml = (value) =>
   String(value)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 
 const register = async (req, res) => {
   try {
@@ -485,7 +485,7 @@ const refresh = async (req, res) => {
     refreshToken: payload.refreshToken,
   });
 
-  if (!existingToken || !existingToken.isValid) {
+  if (!existingToken.isValid) {
     throw new CustomError.UnauthenticatedError("Authentication invalid");
   }
 

@@ -3,6 +3,41 @@ const Pdf = require("../models/Pdf");
 const cloudinary = require("../config/cloudinary");
 const streamifier = require("streamifier");
 const pdfQueue = require("../queues/pdfQueue");
+
+const sendServerError = (res, error) => {
+  return res.status(500).json({
+    success: false,
+    message: error.message || "Server error",
+  });
+};
+
+const findUserPdf = async (pdfId, userId) => {
+  if (!mongoose.Types.ObjectId.isValid(pdfId)) {
+    return {
+      error: {
+        status: 400,
+        message: "Invalid PDF id",
+      },
+    };
+  }
+
+  const pdf = await Pdf.findOne({
+    _id: pdfId,
+    user: userId,
+  });
+
+  if (!pdf) {
+    return {
+      error: {
+        status: 404,
+        message: "PDF not found",
+      },
+    };
+  }
+
+  return { pdf };
+};
+
 const getAllPdfs = async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -15,10 +50,7 @@ const getAllPdfs = async (req, res) => {
       pdfs,
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message || "Server error",
-    });
+    return sendServerError(res, error);
   }
 };
 
@@ -27,22 +59,12 @@ const getPdf = async (req, res) => {
     const { pdfId } = req.params;
     const userId = req.user.userId;
 
-    if (!mongoose.Types.ObjectId.isValid(pdfId)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid PDF id",
-      });
-    }
+    const { pdf, error } = await findUserPdf(pdfId, userId);
 
-    const pdf = await Pdf.findOne({
-      _id: pdfId,
-      user: userId,
-    });
-
-    if (!pdf) {
-      return res.status(404).json({
+    if (error) {
+      return res.status(error.status).json({
         success: false,
-        message: "PDF not found",
+        message: error.message,
       });
     }
 
@@ -53,10 +75,7 @@ const getPdf = async (req, res) => {
       pdf,
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message || "Server error",
-    });
+    return sendServerError(res, error);
   }
 };
 
@@ -78,7 +97,10 @@ const uploadPdf = async (req, res) => {
           folder: "learnwithai/pdfs",
         },
         (error, result) => {
-          if (error) return reject(error);
+          if (error) {
+            return reject(error);
+          }
+
           resolve(result);
         }
       );
@@ -102,14 +124,11 @@ const uploadPdf = async (req, res) => {
       pdf,
     });
 
-    // Later:
-    await pdfQueue.add("process-pdf", { pdfId: pdf._id });
-
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message || "Server error",
+    await pdfQueue.add("process-pdf", {
+      pdfId: pdf._id,
     });
+  } catch (error) {
+    return sendServerError(res, error);
   }
 };
 
@@ -118,22 +137,12 @@ const deletePdf = async (req, res) => {
     const { pdfId } = req.params;
     const userId = req.user.userId;
 
-    if (!mongoose.Types.ObjectId.isValid(pdfId)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid PDF id",
-      });
-    }
+    const { pdf, error } = await findUserPdf(pdfId, userId);
 
-    const pdf = await Pdf.findOne({
-      _id: pdfId,
-      user: userId,
-    });
-
-    if (!pdf) {
-      return res.status(404).json({
+    if (error) {
+      return res.status(error.status).json({
         success: false,
-        message: "PDF not found",
+        message: error.message,
       });
     }
 
@@ -148,10 +157,7 @@ const deletePdf = async (req, res) => {
       message: "PDF deleted successfully",
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message || "Server error",
-    });
+    return sendServerError(res, error);
   }
 };
 
@@ -160,22 +166,12 @@ const getPdfStatus = async (req, res) => {
     const { pdfId } = req.params;
     const userId = req.user.userId;
 
-    if (!mongoose.Types.ObjectId.isValid(pdfId)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid PDF id",
-      });
-    }
+    const { pdf, error } = await findUserPdf(pdfId, userId);
 
-    const pdf = await Pdf.findOne({
-      _id: pdfId,
-      user: userId,
-    });
-
-    if (!pdf) {
-      return res.status(404).json({
+    if (error) {
+      return res.status(error.status).json({
         success: false,
-        message: "PDF not found",
+        message: error.message,
       });
     }
 
@@ -185,10 +181,7 @@ const getPdfStatus = async (req, res) => {
       error: pdf.processingError,
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message || "Server error",
-    });
+    return sendServerError(res, error);
   }
 };
 
