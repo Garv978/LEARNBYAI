@@ -11,16 +11,9 @@ const {
 const crypto = require("node:crypto");
 const { sendEmail } = require("../utils");
 const Token = require("../models/Token");
+const he = require("he");
 
 const origin = process.env.CLIENT_URL || "http://localhost:5173";
-
-const escapeHtml = (value) =>
-  String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
 
 const register = async (req, res) => {
   try {
@@ -74,20 +67,21 @@ const register = async (req, res) => {
 
     const role = "user";
     const user = await User.create({ name, email, password, role });
+
     const rawToken = user.createVerificationToken();
     await user.save();
 
-    const verifyEmail = `${origin}/verify-email?token=${rawToken}&email=${encodeURIComponent(
-      user.email
-    )}`;
+    const verifyEmail = `${origin}/verify-email?token=${encodeURIComponent(
+      rawToken
+    )}&email=${encodeURIComponent(user.email)}`;
 
-    const safeVerifyEmail = escapeHtml(verifyEmail);
+    const safeVerifyEmail = he.encode(verifyEmail);
 
     await sendEmail({
       to: user.email,
       subject: "Verify Email",
       html: `
-        <h2>Welcome </h2>
+        <h2>Welcome</h2>
         <p>Your verification token:</p>
         <a href="${safeVerifyEmail}">Verify Email</a>
       `,
@@ -96,7 +90,7 @@ const register = async (req, res) => {
     res.status(StatusCodes.CREATED).json({
       success: true,
       message:
-        "Registration successful. Please check your email to verify your account.",
+        "Registration successful. Please check your inbox to verify your account.",
     });
   } catch (err) {
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
@@ -120,6 +114,12 @@ const verifyEmail = async (req, res) => {
     const user = await User.findOne({
       email: { $eq: email },
     });
+
+    if (!user) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ success: false, message: "Verification failed" });
+    }
 
     const isValid = user.isVerificationTokenValid(verificationToken);
 
@@ -192,9 +192,11 @@ const resendVerifyEmail = async (req, res) => {
 
     const verifyEmailLink = `${
       origin
-    }/verify-email?token=${rawToken}&email=${encodeURIComponent(user.email)}`;
+    }/verify-email?token=${encodeURIComponent(
+      rawToken
+    )}&email=${encodeURIComponent(user.email)}`;
 
-    const safeVerifyEmailLink = escapeHtml(verifyEmailLink);
+    const safeVerifyEmailLink = he.encode(verifyEmailLink);
 
     await sendEmail({
       to: user.email,
@@ -228,9 +230,10 @@ const login = async (req, res) => {
       !email ||
       !password
     ) {
-      return res
-        .status(StatusCodes.BAD_REQUEST)
-        .json({ success: false, message: "Please provide email and password" });
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Please provide email and password",
+      });
     }
 
     const user = await User.findOne({
@@ -313,9 +316,10 @@ const login = async (req, res) => {
       user: tokenUser,
     });
   } catch (err) {
-    res
-      .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ success: false, message: err.message || "Server error" });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: err.message || "Server error",
+    });
   }
 };
 
@@ -359,9 +363,10 @@ const forgotPassword = async (req, res) => {
     const { email } = req.body;
 
     if (typeof email !== "string" || !email) {
-      return res
-        .status(StatusCodes.BAD_REQUEST)
-        .json({ success: false, message: "Please provide email" });
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Please provide email",
+      });
     }
 
     const user = await User.findOne({
@@ -374,11 +379,11 @@ const forgotPassword = async (req, res) => {
 
       const resetLink = `${
         origin
-      }/reset-password?token=${passwordToken}&email=${encodeURIComponent(
-        user.email
-      )}`;
+      }/reset-password?token=${encodeURIComponent(
+        passwordToken
+      )}&email=${encodeURIComponent(user.email)}`;
 
-      const safeResetLink = escapeHtml(resetLink);
+      const safeResetLink = he.encode(resetLink);
 
       await sendEmail({
         to: user.email,
@@ -392,12 +397,13 @@ const forgotPassword = async (req, res) => {
 
     res.status(StatusCodes.OK).json({
       success: true,
-      message: "Please check your email for resetting your password",
+      message: "Please check your email for resetting your account",
     });
   } catch (err) {
-    res
-      .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ success: false, message: err.message || "Server error" });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: err.message || "Server error",
+    });
   }
 };
 
@@ -413,9 +419,10 @@ const resetPassword = async (req, res) => {
       !email ||
       !newPassword
     ) {
-      return res
-        .status(StatusCodes.BAD_REQUEST)
-        .json({ success: false, message: "Invalid request" });
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Invalid request",
+      });
     }
 
     const user = await User.findOne({
@@ -436,7 +443,10 @@ const resetPassword = async (req, res) => {
         .json({ success: false, message: "Invalid or expired token" });
     }
 
-    const strength = validatePasswordStrength(newPassword, [user.name, email]);
+    const strength = validatePasswordStrength(newPassword, [
+      user.name,
+      email,
+    ]);
 
     if (!strength.isStrong) {
       return res.status(StatusCodes.BAD_REQUEST).json({
@@ -455,13 +465,15 @@ const resetPassword = async (req, res) => {
 
     await user.save();
 
-    res
-      .status(StatusCodes.OK)
-      .json({ success: true, message: "Password reset successful" });
+    res.status(StatusCodes.OK).json({
+      success: true,
+      message: "Password reset successful",
+    });
   } catch (err) {
-    res
-      .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ success: false, message: err.message || "Server error" });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: err.message || "Server error",
+    });
   }
 };
 
@@ -485,7 +497,7 @@ const refresh = async (req, res) => {
     refreshToken: payload.refreshToken,
   });
 
-  if (!existingToken.isValid) {
+  if (!existingToken || !existingToken.isValid) {
     throw new CustomError.UnauthenticatedError("Authentication invalid");
   }
 
