@@ -37,7 +37,7 @@ app.use(cors({
     credentials: true,
 }));
 
-app.use(express.json());
+app.use(express.json({ limit: "2mb" }));
 app.use(cookieParser(process.env.JWT_SECRET));
 app.use(csrfSessionMiddleware);
 app.get("/api/v1/csrf-token", (req, res) => {

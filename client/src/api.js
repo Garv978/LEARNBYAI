@@ -45,7 +45,7 @@ API.interceptors.request.use(
 
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => { throw error;}
 );
 
 // ====================
@@ -80,11 +80,11 @@ API.interceptors.response.use(
 
         window.location.href = "/login";
 
-        return Promise.reject(refreshError);
+        return refreshError
       }
     }
 
-    return Promise.reject(error);
+    return error;
   }
 );
 

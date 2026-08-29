@@ -1,8 +1,41 @@
 import { Link, useSearchParams } from "react-router-dom";
 import { useState } from "react";
 
-import { checkPasswordStrength } from "../utils/zxcvbn"; // ✅ import zxcvbn wrapper
+import { checkPasswordStrength } from "../utils/zxcvbn";
 import { resetPassword as resetPasswordAPI } from "../services/AuthServices";
+
+const getEmailParts = (value = "") =>
+  value.toLowerCase().split(/[@._-]+/).filter(Boolean);
+
+const getStrengthTextClass = (score) => {
+  if (score === 0) return "text-red-600";
+  if (score === 1) return "text-orange-500";
+  if (score === 2) return "text-yellow-500";
+  if (score === 3) return "text-blue-600";
+
+  return "text-green-600";
+};
+
+const getStrengthBarClass = (score) => {
+  if (score === 0) return "w-1/5 bg-red-600";
+  if (score === 1) return "w-2/5 bg-orange-500";
+  if (score === 2) return "w-3/5 bg-yellow-500";
+  if (score === 3) return "w-4/5 bg-blue-600";
+
+  return "w-full bg-green-600";
+};
+
+const getStrengthLabel = (score) => {
+  const labels = [
+    "Very Weak",
+    "Weak",
+    "Fair",
+    "Strong",
+    "Very Strong",
+  ];
+
+  return labels[score];
+};
 
 const ResetPassword = () => {
   const [searchParams] = useSearchParams();
@@ -10,14 +43,47 @@ const ResetPassword = () => {
   const email = searchParams.get("email");
 
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState(""); // ✅ new state
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [strength, setStrength] = useState(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const handlePasswordChange = (e) => {
+    const value = e.target.value;
+
+    setPassword(value);
+
+    if (!value) {
+      setStrength(null);
+      return;
+    }
+
+    const emailParts = getEmailParts(email);
+
+    setStrength(
+      checkPasswordStrength(value, [
+        email,
+        ...emailParts,
+      ])
+    );
+  };
+
+  const handleResetResult = (result) => {
+    if (result.success) {
+      setMessage(
+        result.message ||
+          "Password reset successful! You can now log in."
+      );
+      return;
+    }
+
+    setError(result.message);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     setMessage("");
     setError("");
 
@@ -29,13 +95,14 @@ const ResetPassword = () => {
     setLoading(true);
 
     try {
-      const result = await resetPasswordAPI({ email, token, newPassword: password });
+      const result = await resetPasswordAPI({
+        email,
+        token,
+        newPassword: password,
+      });
+
       console.log(result);
-      if (result.success) {
-        setMessage(result.message || "Password reset successful! You can now log in.");
-      } else {
-        setError(result.message);
-      }
+      handleResetResult(result);
     } finally {
       setLoading(false);
     }
@@ -50,12 +117,22 @@ const ResetPassword = () => {
         <h1 className="text-gray-900 text-2xl font-semibold text-center">
           Reset Password
         </h1>
+
         <p className="text-gray-500 text-sm text-center mt-2">
           Enter your new password below
         </p>
 
-        {error && <div className="text-red-500 text-sm mt-4 text-center">{error}</div>}
-        {message && <div className="text-green-600 text-sm mt-4 text-center">{message}</div>}
+        {error && (
+          <div className="text-red-500 text-sm mt-4 text-center">
+            {error}
+          </div>
+        )}
+
+        {message && (
+          <div className="text-green-600 text-sm mt-4 text-center">
+            {message}
+          </div>
+        )}
 
         {/* New password */}
         <div className="flex items-center w-full mt-8 border border-gray-300 rounded-lg overflow-hidden px-4 h-12">
@@ -64,14 +141,7 @@ const ResetPassword = () => {
             placeholder="New password"
             className="bg-transparent text-gray-700 placeholder-gray-400 outline-none text-sm w-full h-full"
             value={password}
-            onChange={(e) => {
-              const value = e.target.value;
-              setPassword(value);
-              const emailParts = email?.toLowerCase().split(/[@._-]+/).filter(Boolean) || [];
-              setStrength(
-                value ? checkPasswordStrength(value, [email, ...emailParts]) : null
-              );
-            }}
+            onChange={handlePasswordChange}
             required
           />
         </div>
@@ -81,40 +151,26 @@ const ResetPassword = () => {
           <div className="mt-3">
             <div className="flex justify-between text-xs mb-1">
               <span>Password Strength</span>
-              <span
-                className={
-                  strength.score === 0
-                    ? "text-red-600"
-                    : strength.score === 1
-                    ? "text-orange-500"
-                    : strength.score === 2
-                    ? "text-yellow-500"
-                    : strength.score === 3
-                    ? "text-blue-600"
-                    : "text-green-600"
-                }
-              >
-                {["Very Weak", "Weak", "Fair", "Strong", "Very Strong"][strength.score]}
+
+              <span className={getStrengthTextClass(strength.score)}>
+                {getStrengthLabel(strength.score)}
               </span>
             </div>
+
             <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
               <div
-                className={`h-full transition-all duration-300 ${
-                  strength.score === 0
-                    ? "w-1/5 bg-red-600"
-                    : strength.score === 1
-                    ? "w-2/5 bg-orange-500"
-                    : strength.score === 2
-                    ? "w-3/5 bg-yellow-500"
-                    : strength.score === 3
-                    ? "w-4/5 bg-blue-600"
-                    : "w-full bg-green-600"
-                }`}
+                className={`h-full transition-all duration-300 ${getStrengthBarClass(
+                  strength.score
+                )}`}
               />
             </div>
+
             {strength.feedback?.warning && (
-              <p className="text-red-500 text-xs mt-2">{strength.feedback.warning}</p>
+              <p className="text-red-500 text-xs mt-2">
+                {strength.feedback.warning}
+              </p>
             )}
+
             {strength.feedback?.suggestions?.length > 0 && (
               <ul className="mt-2 text-xs text-gray-600 list-disc list-inside space-y-1">
                 {strength.feedback.suggestions.map((s) => (
@@ -147,7 +203,10 @@ const ResetPassword = () => {
 
         <p className="text-gray-500 text-sm text-center mt-6">
           Remember your password?{" "}
-          <Link to="/login" className="text-indigo-600 hover:underline font-medium">
+          <Link
+            to="/login"
+            className="text-indigo-600 hover:underline font-medium"
+          >
             Back to Login
           </Link>
         </p>

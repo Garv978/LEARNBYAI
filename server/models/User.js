@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const argon2 = require("argon2");
-const crypto = require("crypto");
+const crypto = require("node::crypto");
 
 const UserSchema = new mongoose.Schema({
   name: {
@@ -13,8 +13,20 @@ const UserSchema = new mongoose.Schema({
     type: String,
     unique: true,
     required: [true, "Please provide email"],
-    match: [/^\S+@\S+\.\S+$/, "Please provide valid email"],
-    maxlength:254, // regex instead of validator
+    validate: {
+      validator: (email) => {
+        if (typeof email !== "string") return false;
+
+        const atIndex = email.indexOf("@");
+        const dotIndex = email.lastIndexOf(".");
+
+        return (
+          atIndex > 0 && dotIndex > atIndex + 1 && dotIndex < email.length - 1
+        );
+      },
+      message: "Please provide valid email",
+    },
+    maxlength: 254, // regex instead of validator
   },
   password: {
     type: String,
@@ -63,12 +75,12 @@ UserSchema.methods.comparePassword = async function (candidatePassword) {
   // Rehash automatically if stronger parameters are configured
   if (
     isMatch &&
-    await argon2.needsRehash(this.password, {
+    (await argon2.needsRehash(this.password, {
       type: argon2.argon2id,
       timeCost: Number(process.env.ARGON2_TIME_COST || 3),
       memoryCost: Number(process.env.ARGON2_MEMORY_COST || 65536),
       parallelism: Number(process.env.ARGON2_PARALLELISM || 1),
-    })
+    }))
   ) {
     this.password = await argon2.hash(peppered, {
       type: argon2.argon2id,
@@ -83,33 +95,42 @@ UserSchema.methods.comparePassword = async function (candidatePassword) {
   return isMatch;
 };
 
-
 // Verification token
 UserSchema.methods.createVerificationToken = function () {
   const rawToken = crypto.randomBytes(40).toString("hex");
-  this.verificationToken = crypto.createHash("sha256").update(rawToken).digest("hex");
+  this.verificationToken = crypto
+    .createHash("sha256")
+    .update(rawToken)
+    .digest("hex");
   this.verificationTokenExpiry = new Date(Date.now() + 10 * 60 * 1000);
   return rawToken;
 };
 
 UserSchema.methods.isVerificationTokenValid = function (token) {
   const hashedInput = crypto.createHash("sha256").update(token).digest("hex");
-  return this.verificationToken === hashedInput && this.verificationTokenExpiry > Date.now();
+  return (
+    this.verificationToken === hashedInput &&
+    this.verificationTokenExpiry > Date.now()
+  );
 };
 
 // Password reset token
 UserSchema.methods.createPasswordResetToken = function () {
   const rawToken = crypto.randomBytes(40).toString("hex");
-  this.passwordToken = crypto.createHash("sha256").update(rawToken).digest("hex");
+  this.passwordToken = crypto
+    .createHash("sha256")
+    .update(rawToken)
+    .digest("hex");
   this.passwordTokenExpirationDate = new Date(Date.now() + 10 * 60 * 1000);
   return rawToken;
 };
 
 UserSchema.methods.isPasswordResetTokenValid = function (token) {
   const hashedInput = crypto.createHash("sha256").update(token).digest("hex");
-  return this.passwordToken === hashedInput && this.passwordTokenExpirationDate > Date.now();
+  return (
+    this.passwordToken === hashedInput &&
+    this.passwordTokenExpirationDate > Date.now()
+  );
 };
 
 module.exports = mongoose.model("User", UserSchema);
-
-

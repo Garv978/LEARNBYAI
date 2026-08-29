@@ -6,7 +6,10 @@ const upload = multer({
   storage,
 
   limits: {
-    fileSize: 8 * 1024 * 1024, // 8 MB
+    fileSize: 8000000, // 8 MB
+    files: 1,
+    fields: 10,
+    parts: 11,
   },
 
   fileFilter(req, file, cb) {

@@ -84,7 +84,7 @@ const register = async (req, res) => {
   } catch (err) {
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
-      message: "Something went wrong with your Registration" || "Server error",
+      message: "Something went wrong with your Registration",
     });
   }
 };
