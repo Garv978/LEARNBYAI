@@ -15,7 +15,7 @@ const UserSchema = new mongoose.Schema({
     required: [true, "Please provide email"],
     validate: {
       validator: (email) => {
-        if (typeof email !== "string") return false;
+        if (typeof email !== "string") {return false;}
 
         const atIndex = email.indexOf("@");
         const dotIndex = email.lastIndexOf(".");
@@ -52,7 +52,7 @@ const UserSchema = new mongoose.Schema({
 
 // Hash password before saving
 UserSchema.pre("save", async function () {
-  if (!this.password || !this.isModified("password")) return;
+  if (!this.password || !this.isModified("password")) {return;}
 
   const peppered = this.password + process.env.PASSWORD_PEPPER;
 
@@ -66,7 +66,7 @@ UserSchema.pre("save", async function () {
 
 // Compare password
 UserSchema.methods.comparePassword = async function (candidatePassword) {
-  if (!this.password) return false;
+  if (!this.password) {return false;}
 
   const peppered = candidatePassword + process.env.PASSWORD_PEPPER;
 

@@ -1,4 +1,6 @@
-const { RecursiveCharacterTextSplitter } = require("@langchain/textsplitters");
+const {
+  RecursiveCharacterTextSplitter,
+} = require('@langchain/textsplitters');
 
 /**
  * Splits text into overlapping chunks using LangChain's RecursiveCharacterTextSplitter.
@@ -7,12 +9,17 @@ const { RecursiveCharacterTextSplitter } = require("@langchain/textsplitters");
  * @param {number} chunkOverlap - Overlap between chunks (default 200).
  * @returns {Promise<Array>} - Array of chunked documents.
  */
-async function splitTextIntoChunks(text, chunkSize = 1000, chunkOverlap = 200) {
-    const splitter = new RecursiveCharacterTextSplitter({
-        chunkSize,
-        chunkOverlap,
-    });
+async function splitTextIntoChunks(
+  text,
+  chunkSize = 1000,
+  chunkOverlap = 200
+) {
+  const splitter = new RecursiveCharacterTextSplitter({
+    chunkSize,
+    chunkOverlap,
+  });
 
-    return await splitter.splitText(text);
+  return splitter.splitText(text);
 }
-module.exports= splitTextIntoChunks;
+
+module.exports = splitTextIntoChunks;

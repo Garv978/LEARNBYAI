@@ -1,4 +1,4 @@
-const hfClient = require("../config/huggingFace");
+const hfClient = require('../config/huggingFace');
 
 /**
  * Create an embedding for a given text using Hugging Face Inference API.
@@ -8,13 +8,14 @@ const hfClient = require("../config/huggingFace");
 async function createEmbedding(text) {
   try {
     const embedding = await hfClient.featureExtraction({
-      model: "BAAI/bge-small-en-v1.5",
+      model: 'BAAI/bge-small-en-v1.5',
       inputs: text,
     });
+
     return embedding;
   } catch (error) {
-    console.error("Embedding Error:", error);
-    throw new Error("Failed to create embedding");
+    console.error('Embedding Error:', error);
+    throw new Error('Failed to create embedding', { cause: error });
   }
 }
 

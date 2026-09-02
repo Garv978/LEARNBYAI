@@ -1,4 +1,4 @@
-const { PDFParse } = require("pdf-parse");
+const { PDFParse } = require('pdf-parse');
 
 async function parsePdfBuffer(buffer) {
   let parser;
@@ -15,7 +15,9 @@ async function parsePdfBuffer(buffer) {
       metadata: parsed.metadata,
     };
   } catch (err) {
-    throw new Error(`Failed to parse PDF: ${err.message}`);
+    throw new Error(`Failed to parse PDF: ${err.message}`, {
+      cause: err,
+    });
   } finally {
     if (parser) {
       await parser.destroy();

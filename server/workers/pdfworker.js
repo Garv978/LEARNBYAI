@@ -28,7 +28,7 @@ const connectDB = require("../db/connect");
       console.log("📄 Processing PDF:", job.data.pdfId);
 
       const pdf = await Pdf.findById(job.data.pdfId);
-      if (!pdf) throw new Error("PDF not found");
+      if (!pdf) {throw new Error("PDF not found");}
 
       await pdf.markProcessing();
 
@@ -45,7 +45,7 @@ const connectDB = require("../db/connect");
         // Parse PDF
         // -----------------------------
         const parsed = await parsePdfBuffer(buffer);
-        if (!parsed.text.trim()) throw new Error("No text found in PDF");
+        if (!parsed.text.trim()) {throw new Error("No text found in PDF");}
 
         pdf.pages = parsed.pages;
 

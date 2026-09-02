@@ -497,7 +497,7 @@ const refresh = async (req, res) => {
     refreshToken: payload.refreshToken,
   });
 
-  if (!existingToken || !existingToken.isValid) {
+  if (!existingToken?.isValid) {
     throw new CustomError.UnauthenticatedError("Authentication invalid");
   }
 
