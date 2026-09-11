@@ -1,9 +1,9 @@
-const pineconeClient = require("../config/pinecone");
+const pineconeClient = require('../config/pinecone');
 
 async function getIndex() {
-  const desc = await pineconeClient.describeIndex(process.env.PINECONE_INDEX);
-
-
+  const desc = await pineconeClient.describeIndex(
+    process.env.PINECONE_INDEX
+  );
 
   return pineconeClient.index({
     host: desc.host,
@@ -11,12 +11,11 @@ async function getIndex() {
 }
 
 async function upsertVectors(index, vectors) {
-
-
-  return await index.upsert({
+  return index.upsert({
     records: vectors,
   });
 }
+
 async function queryIndex(index, queryVector, topK = 5) {
   const results = await index.query({
     vector: queryVector,

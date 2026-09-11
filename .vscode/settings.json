@@ -23,5 +23,9 @@
     "Tayal",
     "textsplitters",
     "zxcvbn"
-  ]
+  ],
+  "sonarlint.connectedMode.project": {
+    "connectionId": "garv978",
+    "projectKey": "Garv978_LEARNBYAI"
+  }
 }

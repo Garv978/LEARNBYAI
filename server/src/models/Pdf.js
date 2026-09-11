@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
 const pdfSchema = new mongoose.Schema(
   {
@@ -28,9 +28,10 @@ const pdfSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+
     mimeType: {
       type: String,
-      default: "application/pdf",
+      default: 'application/pdf',
     },
 
     pages: Number,
@@ -38,22 +39,22 @@ const pdfSchema = new mongoose.Schema(
     processingStatus: {
       type: String,
       enum: [
-        "queued",
-        "uploading",
-        "processing",
-        "extracting",
-        "embedding",
-        "completed",
-        "failed",
+        'queued',
+        'uploading',
+        'processing',
+        'extracting',
+        'embedding',
+        'completed',
+        'failed',
       ],
-      default: "queued",
+      default: 'queued',
     },
 
     processingError: String,
 
     user: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: 'User',
       required: true,
     },
 
@@ -64,7 +65,7 @@ const pdfSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  },
+  }
 );
 
 pdfSchema.index({
@@ -78,18 +79,19 @@ pdfSchema.methods.markOpened = function () {
 };
 
 pdfSchema.methods.markProcessing = function () {
-  this.processingStatus = "processing";
+  this.processingStatus = 'processing';
   return this.save();
 };
 
-pdfSchema.methods.markCompleted = function (extractedText) {
-  this.processingStatus = "completed";
+pdfSchema.methods.markCompleted = function () {
+  this.processingStatus = 'completed';
   return this.save();
 };
 
 pdfSchema.methods.markFailed = function (errorMessage) {
-  this.processingStatus = "failed";
+  this.processingStatus = 'failed';
   this.processingError = errorMessage;
   return this.save();
 };
-module.exports = mongoose.model("Pdf", pdfSchema);
+
+module.exports = mongoose.model('Pdf', pdfSchema);

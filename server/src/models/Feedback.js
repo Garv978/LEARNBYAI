@@ -23,7 +23,7 @@ const FeedbackSchema = new mongoose.Schema(
       lowercase: true,
       validate: {
         validator: (email) => {
-          if (typeof email !== "string") return false;
+          if (typeof email !== "string") {return false;}
 
           const atIndex = email.indexOf("@");
           const dotIndex = email.lastIndexOf(".");
